@@ -179,6 +179,7 @@ impl App {
         [
             ("resources/skull.obj", "Skull"),
             ("resources/Crate1.obj", "Cube"),
+            ("resources/floor.obj", "Floor"),
         ]
         .map(|(path, name)| (path.to_string(), name.to_string()))
         .into_iter()
@@ -189,6 +190,7 @@ impl App {
         [
             ("resources/skull.jpg", "Skull"),
             ("resources/crate_1.jpg", "Grass"),
+            ("resources/carpet.jpg", "Carpet"),
         ]
         .map(|(path, name)| (path.to_string(), name.to_string()))
         .into_iter()
@@ -220,12 +222,22 @@ impl App {
         self.objects.push(Object::new(
             self.shapes["Skull"].clone(),
             self.textures["Skull"].clone(),
-            Matrix::scale(0.1),
+            Matrix::translate(Vector3::from_xyz(0.0, -0.3, 0.0)) * Matrix::rotation_x(1.2 * std::f32::consts::PI / 2.0) * Matrix::scale(0.1),
         ));
         self.objects.push(Object::new(
             self.shapes["Cube"].clone(),
             self.textures["Grass"].clone(),
-            Matrix::scale(1.0) * Matrix::translate(Vector3::from_xyz(5.0, -1.0, 5.0)),
+            Matrix::translate(Vector3::from_xyz(5.0, -1.0, 5.0)),
+        ));
+        self.objects.push(Object::new(
+            self.shapes["Cube"].clone(),
+            self.textures["Grass"].clone(),
+            Matrix::translate(Vector3::from_xyz(0.0, -1.0, 0.0)),
+        ));
+        self.objects.push(Object::new(
+            self.shapes["Floor"].clone(),
+            self.textures["Carpet"].clone(),
+            Matrix::translate(Vector3::from_xyz(0.0, -2.0, 0.0)) * Matrix::scale(5.0),
         ));
     }
 }
