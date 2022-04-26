@@ -1,0 +1,29 @@
+[package]
+name = "lightseeker"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+yew = "0.19.2"
+wasm-bindgen = "0.2"
+gloo-render = "0.1"
+gloo = "0.6.0"
+log = "0.4.6"
+wasm-logger = "0.2.0"
+rand = { version = "0.6.5", features = ["wasm-bindgen"] }
+js-sys = "0.3.56"
+
+[dependencies.web-sys]
+version = "0.3"
+features = [
+  'Document',
+  'HtmlCanvasElement',
+  'WebGl2RenderingContext',
+  'WebGlUniformLocation',
+  'WebGlTexture',
+  'CanvasRenderingContext2d',
+  'EventListener',
+  'WebGlProgram', 
+  'WebGlShader',
+  'WebGlBuffer',
+]
