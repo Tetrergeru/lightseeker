@@ -1,7 +1,7 @@
 #version 300 es
 precision mediump float;
 
-in vec2 fragCoord;
+in vec4 fragCoord;
 
 out vec4 color;
 

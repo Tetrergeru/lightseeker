@@ -59,6 +59,7 @@ impl Color {
 
     pub const BLACK: Color = Self::new(0, 0, 0, 255);
     pub const WHITE: Color = Self::new(255, 255, 255, 255);
+    pub const RED: Color = Self::new(255, 0, 0, 255);
 }
 
 fn f64_to_u8(v: f64) -> u8 {

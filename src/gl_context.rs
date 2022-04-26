@@ -4,7 +4,7 @@ use web_sys::{HtmlCanvasElement, WebGl2RenderingContext};
 use crate::{
     color::Color,
     shaders::{checkerboard::CheckerboardShader, copy_image::CopyImageShader},
-    vector::Vector2,
+    vector::Vector2, object::Object, matrix::Matrix,
 };
 
 pub struct GlContext {
@@ -41,10 +41,12 @@ impl GlContext {
         }
     }
 
-    pub fn checkerboard(&self, cell_size: f64, color_a: Color, color_b: Color) {
+    pub fn checkerboard(&self, obj: &mut Object, proj: Matrix, cell_size: f32, color_a: Color, color_b: Color) {
         self.checkerboard.draw(
             &self.context,
-            Vector2::new(cell_size as f64, cell_size as f64),
+            obj,
+            proj,
+            Vector2::new(cell_size, cell_size),
             color_a,
             color_b,
         );
