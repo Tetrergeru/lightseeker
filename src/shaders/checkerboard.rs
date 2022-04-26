@@ -1,12 +1,7 @@
 use web_sys::{WebGl2RenderingContext as Gl, WebGlProgram, WebGlUniformLocation};
 
-use super::{init_shader_program, VS_SOURCE};
-use crate::{
-    color::Color,
-    matrix::Matrix,
-    objects::{object::Object, shape::Shape},
-    vector::Vector2,
-};
+use super::{init_shader_program, uniform_texture, VS_SOURCE};
+use crate::{matrix::Matrix, objects::object::Object};
 
 pub struct CheckerboardShader {
     program: WebGlProgram,
@@ -18,10 +13,8 @@ pub struct CheckerboardShader {
     vertex_normal_location: u32,
     vertex_textcoord_location: u32,
 
-    cell_size_location: WebGlUniformLocation,
-    color_a_location: WebGlUniformLocation,
-    color_b_location: WebGlUniformLocation,
     projection_location: WebGlUniformLocation,
+    texture_location: WebGlUniformLocation,
 }
 
 const FS_SOURCE: &str = include_str!("src/checkerboard.frag");
@@ -32,12 +25,10 @@ impl CheckerboardShader {
 
         let vertex_position_location = gl.get_attrib_location(&program, "vertexPosition") as u32;
         let vertex_normal_location = gl.get_attrib_location(&program, "vertexNormal") as u32;
-        let vertex_texture_coord_location =
-            gl.get_attrib_location(&program, "vertexTexture") as u32;
-        let cell_size_location = gl.get_uniform_location(&program, "cellSize").unwrap();
-        let color_a_location = gl.get_uniform_location(&program, "colorA").unwrap();
-        let color_b_location = gl.get_uniform_location(&program, "colorB").unwrap();
+        let vertex_textcoord_location = gl.get_attrib_location(&program, "vertexTexture") as u32;
+
         let projection_location = gl.get_uniform_location(&program, "projection").unwrap();
+        let texture_location = gl.get_uniform_location(&program, "image").unwrap();
         Self {
             program,
             width,
@@ -45,12 +36,10 @@ impl CheckerboardShader {
 
             vertex_position_location,
             vertex_normal_location,
-            vertex_textcoord_location: vertex_texture_coord_location,
+            vertex_textcoord_location,
 
-            cell_size_location,
-            color_a_location,
-            color_b_location,
             projection_location,
+            texture_location,
         }
     }
 
@@ -59,15 +48,7 @@ impl CheckerboardShader {
         self.height = h;
     }
 
-    pub fn draw(
-        &self,
-        gl: &Gl,
-        obj: &Object,
-        proj: Matrix,
-        cell_size: Vector2,
-        color_a: Color,
-        color_b: Color,
-    ) {
+    pub fn draw(&self, gl: &Gl, obj: &Object, proj: Matrix) {
         gl.use_program(Some(&self.program));
 
         gl.viewport(0, 0, self.width, self.height);
@@ -104,27 +85,10 @@ impl CheckerboardShader {
         );
         gl.enable_vertex_attrib_array(self.vertex_textcoord_location);
 
-        gl.uniform2f(
-            Some(&self.cell_size_location),
-            cell_size.x as f32 / self.width as f32,
-            cell_size.y as f32 / self.height as f32,
-        );
-
-        gl.uniform3f(
-            Some(&self.color_a_location),
-            color_a.get_r() as f32 / 255.0,
-            color_a.get_g() as f32 / 255.0,
-            color_a.get_b() as f32 / 255.0,
-        );
-
-        gl.uniform3f(
-            Some(&self.color_b_location),
-            color_b.get_r() as f32 / 255.0,
-            color_b.get_g() as f32 / 255.0,
-            color_b.get_b() as f32 / 255.0,
-        );
-
         gl.uniform_matrix4fv_with_f32_array(Some(&self.projection_location), true, &proj);
+
+        gl.bind_texture(Gl::TEXTURE_2D, Some(obj.texture.location()));
+        uniform_texture(gl, &self.texture_location, obj.texture.location());
 
         gl.enable(Gl::BLEND);
         gl.blend_func(Gl::SRC_ALPHA, Gl::ONE_MINUS_SRC_ALPHA);

@@ -9,6 +9,31 @@ pub struct ObjParser {
     vertices: Vec<VertexData>,
 }
 
+#[derive(Clone, Copy)]
+struct RawVertexData {
+    pub point: Vector3,
+    pub normal: Option<Vector3>,
+    pub texture_coord: Vector2,
+}
+
+impl RawVertexData {
+    fn expect_some(self) -> VertexData {
+        VertexData {
+            point: self.point,
+            texture_coord: self.texture_coord,
+            normal: self.normal.unwrap(),
+        }
+    }
+
+    fn expect_none(self, normal: Vector3) -> VertexData {
+        VertexData {
+            point: self.point,
+            texture_coord: self.texture_coord,
+            normal,
+        }
+    }
+}
+
 impl ObjParser {
     pub fn parse(file: &str) -> Vec<VertexData> {
         Self::new().parse_obj(file)
@@ -48,16 +73,26 @@ impl ObjParser {
         if split.len() < 3 {
             panic!("Not enough entities for a polygon");
         }
-        let base_vertex = self.parse_vertex_data(split[1]);
+        let v0 = self.parse_vertex_data(split[1]);
+        let missing_normales = v0.normal.is_none();
 
         for i in 2..split.len() - 1 {
-            self.vertices.push(base_vertex.clone());
-            self.vertices.push(self.parse_vertex_data(split[i]));
-            self.vertices.push(self.parse_vertex_data(split[i + 1]));
+            let v1 = self.parse_vertex_data(split[i]);
+            let v2 = self.parse_vertex_data(split[i + 1]);
+            if !missing_normales {
+                self.vertices.push(v0.expect_some());
+                self.vertices.push(v1.expect_some());
+                self.vertices.push(v2.expect_some());
+            } else {
+                let normal = (v1.point - v0.point).cross(v2.point - v0.point);
+                self.vertices.push(v0.expect_none(normal));
+                self.vertices.push(v1.expect_none(normal));
+                self.vertices.push(v2.expect_none(normal));
+            }
         }
     }
 
-    fn parse_vertex_data(&self, string: &str) -> VertexData {
+    fn parse_vertex_data(&self, string: &str) -> RawVertexData {
         let split: Vec<&str> = string.split('/').collect();
 
         let point_idx: usize = split[0].parse().unwrap();
@@ -66,13 +101,21 @@ impl ObjParser {
         let texture_idx: usize = split[1].parse().unwrap();
         let texture = self.texture_coords[texture_idx - 1];
 
-        let normal_idx: usize = split[2].parse().unwrap();
-        let normal = self.normals[normal_idx - 1];
+        if split.len() < 3 {
+            RawVertexData {
+                point,
+                texture_coord: texture,
+                normal: None,
+            }
+        } else {
+            let normal_idx: usize = split[2].parse().unwrap();
+            let normal = Some(self.normals[normal_idx - 1]);
 
-        VertexData {
-            point,
-            texture_coord: texture,
-            normal,
+            RawVertexData {
+                point,
+                texture_coord: texture,
+                normal,
+            }
         }
     }
 }

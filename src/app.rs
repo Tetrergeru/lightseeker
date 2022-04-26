@@ -7,11 +7,10 @@ use web_sys::{HtmlCanvasElement, KeyboardEvent, WebGl2RenderingContext};
 use yew::{html, Component, Context, Html, NodeRef};
 
 use crate::{
-    color::Color,
-    download::download_text,
+    download::{download_image, download_text},
     gl_context::GlContext,
     matrix::Matrix,
-    objects::{object::Object, shape::Shape},
+    objects::{object::Object, shape::Shape, texture::Texture},
     vector::Vector4,
 };
 
@@ -19,6 +18,7 @@ pub struct App {
     canvas_ref: NodeRef,
 
     shapes: HashMap<String, Rc<Shape>>,
+    textures: HashMap<String, Rc<Texture>>,
     objects: Vec<Object>,
     currently_downloading: usize,
 
@@ -32,6 +32,7 @@ pub struct App {
 pub enum Msg {
     KeyDown(KeyboardEvent),
     ShapeLoaded(String, Shape),
+    TextureLoaded(String, Texture),
 }
 
 impl Component for App {
@@ -50,6 +51,7 @@ impl Component for App {
             canvas_ref: NodeRef::default(),
 
             shapes: HashMap::new(),
+            textures: HashMap::new(),
             objects: vec![],
             currently_downloading: 0,
 
@@ -60,7 +62,7 @@ impl Component for App {
         }
     }
 
-    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::KeyDown(e) => {
                 let key = e.code();
@@ -82,12 +84,12 @@ impl Component for App {
             }
             Msg::ShapeLoaded(name, shape) => {
                 self.shapes.insert(name, Rc::new(shape));
-                self.currently_downloading -= 1;
-
-                if self.currently_downloading == 0 {
-                    self.on_downloaded();
-                }
-
+                self.single_download_finished();
+                false
+            }
+            Msg::TextureLoaded(name, texture) => {
+                self.textures.insert(name, Rc::new(texture));
+                self.single_download_finished();
                 false
             }
         }
@@ -107,17 +109,32 @@ impl Component for App {
             let canvas = self.canvas_ref.cast::<HtmlCanvasElement>().unwrap();
             self.context = Some(GlContext::new(canvas, 1000, 1000));
 
-            let callback = ctx
-                .link()
-                .clone()
-                .callback(|(str, shape)| Msg::ShapeLoaded(str, shape));
+            for (path, name) in Self::required_shapes() {
+                let callback = ctx
+                    .link()
+                    .clone()
+                    .callback(|(str, shape)| Msg::ShapeLoaded(str, shape));
 
-            self.currently_downloading += 1;
-            let gl = self.gl();
-            spawn_local(async move {
-                let text = download_text("resources/skull.obj").await;
-                callback.emit(("Skull".to_string(), Shape::parse_obj_file(&text, &gl)));
-            });
+                self.currently_downloading += 1;
+                let gl = self.gl();
+                spawn_local(async move {
+                    let text = download_text(&path).await;
+                    callback.emit((name, Shape::parse_obj_file(&text, &gl)));
+                });
+            }
+            for (path, name) in Self::required_textures() {
+                let callback = ctx
+                    .link()
+                    .clone()
+                    .callback(|(str, shape)| Msg::TextureLoaded(str, shape));
+
+                self.currently_downloading += 1;
+                let gl = self.gl();
+                spawn_local(async move {
+                    let image = download_image(&path).await;
+                    callback.emit((name, Texture::new(image, &gl)));
+                });
+            }
         }
 
         self.draw();
@@ -125,6 +142,26 @@ impl Component for App {
 }
 
 impl App {
+    fn required_shapes() -> Vec<(String, String)> {
+        [
+            ("resources/skull.obj", "Skull"),
+            ("resources/Crate1.obj", "Cube"),
+        ]
+        .map(|(path, name)| (path.to_string(), name.to_string()))
+        .into_iter()
+        .collect()
+    }
+
+    fn required_textures() -> Vec<(String, String)> {
+        [
+            ("resources/skull.jpg", "Skull"),
+            ("resources/crate_1.jpg", "Grass"),
+        ]
+        .map(|(path, name)| (path.to_string(), name.to_string()))
+        .into_iter()
+        .collect()
+    }
+
     fn gl(&self) -> WebGl2RenderingContext {
         self.context.as_ref().unwrap().gl()
     }
@@ -135,20 +172,31 @@ impl App {
         matrix = matrix * Matrix::rotation_y(self.angle);
         matrix = matrix * Matrix::translate(self.position);
         for obj in self.objects.iter_mut() {
-            self.context.as_ref().unwrap().checkerboard(
-                obj,
-                matrix * obj.transform,
-                20.0,
-                Color::RED,
-                Color::RED,
-            );
+            self.context
+                .as_ref()
+                .unwrap()
+                .checkerboard(obj, matrix * obj.transform);
+        }
+    }
+
+    fn single_download_finished(&mut self) {
+        self.currently_downloading -= 1;
+
+        if self.currently_downloading == 0 {
+            self.on_downloaded();
         }
     }
 
     fn on_downloaded(&mut self) {
         self.objects.push(Object::new(
             self.shapes["Skull"].clone(),
-            Matrix::scale(1.0),
-        ))
+            self.textures["Skull"].clone(),
+            Matrix::scale(0.1),
+        ));
+        self.objects.push(Object::new(
+            self.shapes["Cube"].clone(),
+            self.textures["Grass"].clone(),
+            Matrix::scale(1.0) * Matrix::translate(Vector4::from_xyz(5.0, -1.0, 5.0)),
+        ));
     }
 }

@@ -1,4 +1,4 @@
-use std::ops::{AddAssign, Mul};
+use std::ops::{AddAssign, Mul, Sub};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Vector2 {
@@ -57,6 +57,23 @@ impl Vector3 {
 
     pub fn z(&self) -> f32 {
         self.get(2)
+    }
+
+    pub fn cross(self, b: Self) -> Self {
+        let a = self;
+        Self::from_xyz(
+            a.y() * b.z() - a.z() * b.y(),
+            a.z() * b.x() - a.z() * b.z(),
+            a.x() * b.y() - a.y() * b.x(),
+        )
+    }
+}
+
+impl Sub for Vector3 {
+    type Output = Vector3;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self::from_xyz(self.x() - rhs.x(), self.y() - rhs.y(), self.z() - rhs.z())
     }
 }
 

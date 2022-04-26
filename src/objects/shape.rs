@@ -29,7 +29,7 @@ impl Shape {
         self.buffer.clone()
     }
 
-    fn make_buffer(vertices: &Vec<VertexData>, gl: &WebGl2RenderingContext) -> WebGlBuffer {
+    fn make_buffer(vertices: &[VertexData], gl: &WebGl2RenderingContext) -> WebGlBuffer {
         let mut vec_f32 = Vec::with_capacity(vertices.len() * (3 + 3 + 2));
         for vertex in vertices.iter() {
             Self::push_vector3(&mut vec_f32, vertex.point);

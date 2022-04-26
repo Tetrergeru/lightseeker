@@ -20,6 +20,7 @@ version = "0.3"
 features = [
   'Document',
   'HtmlCanvasElement',
+  'HtmlImageElement',
   'WebGl2RenderingContext',
   'WebGlUniformLocation',
   'WebGlTexture',
