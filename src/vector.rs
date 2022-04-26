@@ -47,6 +47,10 @@ impl Vector3 {
         self.vector[i]
     }
 
+    pub fn set(&mut self, i: usize, value: f32) {
+        self.vector[i] = value
+    }
+
     pub fn x(&self) -> f32 {
         self.get(0)
     }
@@ -74,6 +78,14 @@ impl Sub for Vector3 {
 
     fn sub(self, rhs: Self) -> Self::Output {
         Self::from_xyz(self.x() - rhs.x(), self.y() - rhs.y(), self.z() - rhs.z())
+    }
+}
+
+impl AddAssign for Vector3 {
+    fn add_assign(&mut self, rhs: Self) {
+        for i in 0..3 {
+            self.vector[i] += rhs.vector[i];
+        }
     }
 }
 

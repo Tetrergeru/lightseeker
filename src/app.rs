@@ -3,34 +3,39 @@ use std::{collections::HashMap, rc::Rc};
 use gloo::{events::EventListener, utils::document};
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::spawn_local;
-use web_sys::{HtmlCanvasElement, KeyboardEvent, WebGl2RenderingContext};
+use web_sys::{HtmlCanvasElement, KeyboardEvent, MouseEvent, WebGl2RenderingContext};
 use yew::{html, Component, Context, Html, NodeRef};
 
 use crate::{
+    camera::Camera,
     download::{download_image, download_text},
     gl_context::GlContext,
     matrix::Matrix,
     objects::{object::Object, shape::Shape, texture::Texture},
-    vector::Vector4,
+    vector::{Vector2, Vector3},
 };
 
 pub struct App {
     canvas_ref: NodeRef,
+    context: Option<GlContext>,
 
     shapes: HashMap<String, Rc<Shape>>,
     textures: HashMap<String, Rc<Texture>>,
     objects: Vec<Object>,
     currently_downloading: usize,
 
-    position: Vector4,
-    angle: f32,
-    context: Option<GlContext>,
+    camera: Camera,
+    mouse_down: bool,
+    size: Vector2,
 
     _keydown_listener: EventListener,
 }
 
 pub enum Msg {
     KeyDown(KeyboardEvent),
+    MouseDown(MouseEvent),
+    MouseMove(MouseEvent),
+    MouseUp(MouseEvent),
     ShapeLoaded(String, Shape),
     TextureLoaded(String, Texture),
 }
@@ -47,6 +52,8 @@ impl Component for App {
             onkeydown.emit(e);
         });
 
+        let size = Vector2::from_xy(1100.0, 800.0);
+
         Self {
             canvas_ref: NodeRef::default(),
 
@@ -55,8 +62,10 @@ impl Component for App {
             objects: vec![],
             currently_downloading: 0,
 
-            position: Vector4::from_xyz(0.0, 0.0, -10.0),
-            angle: 0.0,
+            camera: Camera::new(Vector3::zero(), 0.0, 0.0).with_aspect(size.x() / size.y()),
+            mouse_down: false,
+            size,
+
             context: None,
             _keydown_listener: keydown_listener,
         }
@@ -66,18 +75,12 @@ impl Component for App {
         match msg {
             Msg::KeyDown(e) => {
                 let key = e.code();
-                let mut need_log = true;
                 match key.as_str() {
-                    "KeyA" => self.position += Vector4::from_xyzw(0.5, 0.0, 0.0, 0.0),
-                    "KeyD" => self.position += Vector4::from_xyzw(-0.5, 0.0, 0.0, 0.0),
-                    "KeyW" => self.position += Vector4::from_xyzw(0.0, 0.0, 0.5, 0.0),
-                    "KeyS" => self.position += Vector4::from_xyzw(0.0, 0.0, -0.5, 0.0),
-                    "KeyQ" => self.angle -= 0.1,
-                    "KeyE" => self.angle += 0.1,
-                    _ => need_log = false,
-                }
-                if need_log {
-                    log::debug!("App update KeyDown({}) {:?}", key.as_str(), self.position);
+                    "KeyW" => self.camera.move_h(Vector2::from_xy(0.0, 0.2)),
+                    "KeyS" => self.camera.move_h(Vector2::from_xy(0.0, -0.2)),
+                    "KeyA" => self.camera.move_h(Vector2::from_xy(0.2, 0.0)),
+                    "KeyD" => self.camera.move_h(Vector2::from_xy(-0.2, 0.0)),
+                    _ => (),
                 }
                 self.draw();
                 false
@@ -92,14 +95,40 @@ impl Component for App {
                 self.single_download_finished();
                 false
             }
+            Msg::MouseDown(_) => {
+                self.mouse_down = true;
+                false
+            }
+            Msg::MouseMove(e) => {
+                if self.mouse_down {
+                    let x = e.movement_x() as f32;
+                    let y = e.movement_y() as f32;
+                    log::debug!("Msg::MouseMove x = {}, y = {}", x, y);
+                    self.camera.rotate_v(-y / self.size.y() * 10.0);
+                    self.camera.rotate_h(x / self.size.x() * 10.0);
+                    self.draw();
+                }
+                false
+            }
+            Msg::MouseUp(_) => {
+                self.mouse_down = false;
+                false
+            }
         }
     }
 
-    fn view(&self, _ctx: &Context<Self>) -> Html {
+    fn view(&self, ctx: &Context<Self>) -> Html {
         html! {
             <canvas
-                style="width: 700px; height: 700px;"
+                style={format!(
+                    "width: {}px; height: {}px; border: solid black;",
+                    self.size.x() as usize,
+                    self.size.y() as usize,
+                )}
                 ref={self.canvas_ref.clone()}
+                onmousedown={ctx.link().callback(Msg::MouseDown)}
+                onmouseup={ctx.link().callback(Msg::MouseUp)}
+                onmousemove={ctx.link().callback(Msg::MouseMove)}
             />
         }
     }
@@ -107,7 +136,11 @@ impl Component for App {
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
         if first_render {
             let canvas = self.canvas_ref.cast::<HtmlCanvasElement>().unwrap();
-            self.context = Some(GlContext::new(canvas, 1000, 1000));
+            self.context = Some(GlContext::new(
+                canvas,
+                self.size.x() as u32,
+                self.size.y() as u32,
+            ));
 
             for (path, name) in Self::required_shapes() {
                 let callback = ctx
@@ -167,15 +200,11 @@ impl App {
     }
 
     fn draw(&mut self) {
-        let mut matrix = Matrix::ident();
-        matrix = matrix * Matrix::perspective(1.5, 1.0, 0.1, 2000.0);
-        matrix = matrix * Matrix::rotation_y(self.angle);
-        matrix = matrix * Matrix::translate(self.position);
         for obj in self.objects.iter_mut() {
             self.context
                 .as_ref()
                 .unwrap()
-                .checkerboard(obj, matrix * obj.transform);
+                .checkerboard(obj, self.camera.matrix() * obj.transform);
         }
     }
 
@@ -196,7 +225,7 @@ impl App {
         self.objects.push(Object::new(
             self.shapes["Cube"].clone(),
             self.textures["Grass"].clone(),
-            Matrix::scale(1.0) * Matrix::translate(Vector4::from_xyz(5.0, -1.0, 5.0)),
+            Matrix::scale(1.0) * Matrix::translate(Vector3::from_xyz(5.0, -1.0, 5.0)),
         ));
     }
 }

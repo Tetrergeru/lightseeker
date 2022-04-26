@@ -63,6 +63,7 @@ impl CheckerboardShader {
             obj.shape.step() * 4,
             obj.shape.point_offset() * 4,
         );
+        // log::debug!("self.vertex_position_location");
         gl.enable_vertex_attrib_array(self.vertex_position_location);
 
         gl.vertex_attrib_pointer_with_i32(
@@ -73,6 +74,7 @@ impl CheckerboardShader {
             obj.shape.step() * 4,
             obj.shape.norm_offset() * 4,
         );
+        // log::debug!("self.vertex_normal_location");
         gl.enable_vertex_attrib_array(self.vertex_normal_location);
 
         gl.vertex_attrib_pointer_with_i32(
@@ -83,6 +85,7 @@ impl CheckerboardShader {
             obj.shape.step() * 4,
             obj.shape.texture_coord_offset() * 4,
         );
+        // log::debug!("self.vertex_textcoord_location");
         gl.enable_vertex_attrib_array(self.vertex_textcoord_location);
 
         gl.uniform_matrix4fv_with_f32_array(Some(&self.projection_location), true, &proj);
