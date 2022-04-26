@@ -9,7 +9,7 @@ use crate::{
 
 pub struct GlContext {
     canvas: HtmlCanvasElement,
-    context: WebGl2RenderingContext,
+    gl: WebGl2RenderingContext,
 
     copy_image: CopyImageShader,
     checkerboard: CheckerboardShader,
@@ -19,31 +19,32 @@ impl GlContext {
     pub fn new(canvas: HtmlCanvasElement, width: u32, height: u32) -> Self {
         canvas.set_width(width);
         canvas.set_height(height);
-        let context = canvas
+        let gl = canvas
             .get_context("webgl2")
             .unwrap()
             .unwrap()
             .dyn_into::<WebGl2RenderingContext>()
             .unwrap();
+        gl.enable(WebGl2RenderingContext::DEPTH_TEST);
         Self {
             copy_image: CopyImageShader::new(
-                &context,
+                &gl,
                 canvas.width() as i32,
                 canvas.height() as i32,
             ),
             checkerboard: CheckerboardShader::new(
-                &context,
+                &gl,
                 canvas.width() as i32,
                 canvas.height() as i32,
             ),
             canvas,
-            context,
+            gl,
         }
     }
 
     pub fn checkerboard(&self, obj: &mut Object, proj: Matrix, cell_size: f32, color_a: Color, color_b: Color) {
         self.checkerboard.draw(
-            &self.context,
+            &self.gl,
             obj,
             proj,
             Vector2::new(cell_size, cell_size),

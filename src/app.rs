@@ -9,6 +9,7 @@ pub struct App {
     canvas_ref: NodeRef,
     objects: Vec<Object>,
     position: Vector4,
+    angle: f32,
     context: Option<GlContext>,
 
     _keydown_listener: EventListener,
@@ -33,22 +34,25 @@ impl Component for App {
         Self {
             canvas_ref: NodeRef::default(),
             objects: vec![Object::cube()],
-            position: Vector4::zero(),
+            position: Vector4::from_xyz(0.0, 0.0, -10.0),
+            angle: 0.0,
             context: None,
             _keydown_listener: keydown_listener,
         }
     }
 
-    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::KeyDown(e) => {
                 let key = e.code();
                 let mut need_log = true;
                 match key.as_str() {
-                    "KeyA" => self.position += Vector4::from_xyzw(-0.5, 0.0, 0.0, 0.0),
-                    "KeyD" => self.position += Vector4::from_xyzw(0.5, 0.0, 0.0, 0.0),
+                    "KeyA" => self.position += Vector4::from_xyzw(0.5, 0.0, 0.0, 0.0),
+                    "KeyD" => self.position += Vector4::from_xyzw(-0.5, 0.0, 0.0, 0.0),
                     "KeyW" => self.position += Vector4::from_xyzw(0.0, 0.0, 0.5, 0.0),
                     "KeyS" => self.position += Vector4::from_xyzw(0.0, 0.0, -0.5, 0.0),
+                    "KeyQ" => self.angle -= 0.1,
+                    "KeyE" => self.angle += 0.1,
                     _ => need_log = false,
                 }
                 if need_log {
@@ -81,12 +85,13 @@ impl Component for App {
 impl App {
     fn draw(&mut self) {
         let mut matrix = Matrix::ident();
+        matrix = matrix * Matrix::perspective(1.5, 1.0, 0.1, 2000.0);
+        matrix = matrix * Matrix::rotation_y(self.angle);
         matrix = matrix * Matrix::transform(self.position);
-        matrix = matrix * Matrix::perspective(1.5, 0.0, 0.1, 100.0);
         for obj in self.objects.iter_mut() {
             self.context.as_ref().unwrap().checkerboard(
                 obj,
-                matrix, //Matrix::transform(self.position) * Matrix::perspective(1.5, 0.0, 0.1, 100.0)
+                matrix,
                 20.0,
                 Color::BLACK,
                 Color::RED,

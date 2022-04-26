@@ -46,6 +46,18 @@ impl Matrix {
         matrix.transpose()
     }
 
+    pub fn rotation_y(a: f32) -> Matrix {
+        let cos = a.cos();
+        let sin = a.sin();
+        [
+            [cos, 0.0, sin, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [-sin, 0.0, cos, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+        .into()
+    }
+
     pub fn set(&mut self, i: usize, j: usize, value: f32) {
         self.matrix[i * Self::SIZE + j] = value;
     }

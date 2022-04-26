@@ -49,7 +49,7 @@ impl CheckerboardShader {
         gl.viewport(0, 0, self.width, self.height);
 
         gl.bind_buffer(Gl::ARRAY_BUFFER, Some(&obj.make_buffer(gl)));
-        gl.vertex_attrib_pointer_with_i32(self.vertex_location, 2, Gl::FLOAT, false, 0, 0);
+        gl.vertex_attrib_pointer_with_i32(self.vertex_location, 4, Gl::FLOAT, false, 0, 0);
         gl.enable_vertex_attrib_array(self.vertex_location);
 
         gl.use_program(Some(&self.program));
