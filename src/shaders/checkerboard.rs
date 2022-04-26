@@ -1,8 +1,12 @@
 use web_sys::{WebGl2RenderingContext as Gl, WebGlProgram, WebGlUniformLocation};
 
-use crate::{color::Color, matrix::Matrix, shape::Shape, vector::Vector2};
-
 use super::{init_shader_program, VS_SOURCE};
+use crate::{
+    color::Color,
+    matrix::Matrix,
+    objects::{object::Object, shape::Shape},
+    vector::Vector2,
+};
 
 pub struct CheckerboardShader {
     program: WebGlProgram,
@@ -10,7 +14,10 @@ pub struct CheckerboardShader {
     width: i32,
     height: i32,
 
-    vertex_location: u32,
+    vertex_position_location: u32,
+    vertex_normal_location: u32,
+    vertex_textcoord_location: u32,
+
     cell_size_location: WebGlUniformLocation,
     color_a_location: WebGlUniformLocation,
     color_b_location: WebGlUniformLocation,
@@ -23,7 +30,10 @@ impl CheckerboardShader {
     pub fn new(gl: &Gl, width: i32, height: i32) -> Self {
         let program = init_shader_program(gl, VS_SOURCE, FS_SOURCE);
 
-        let vertex_location = gl.get_attrib_location(&program, "vertexPosition") as u32;
+        let vertex_position_location = gl.get_attrib_location(&program, "vertexPosition") as u32;
+        let vertex_normal_location = gl.get_attrib_location(&program, "vertexNormal") as u32;
+        let vertex_texture_coord_location =
+            gl.get_attrib_location(&program, "vertexTexture") as u32;
         let cell_size_location = gl.get_uniform_location(&program, "cellSize").unwrap();
         let color_a_location = gl.get_uniform_location(&program, "colorA").unwrap();
         let color_b_location = gl.get_uniform_location(&program, "colorB").unwrap();
@@ -32,7 +42,11 @@ impl CheckerboardShader {
             program,
             width,
             height,
-            vertex_location,
+
+            vertex_position_location,
+            vertex_normal_location,
+            vertex_textcoord_location: vertex_texture_coord_location,
+
             cell_size_location,
             color_a_location,
             color_b_location,
@@ -48,19 +62,47 @@ impl CheckerboardShader {
     pub fn draw(
         &self,
         gl: &Gl,
-        obj: &mut Shape,
+        obj: &Object,
         proj: Matrix,
         cell_size: Vector2,
         color_a: Color,
         color_b: Color,
     ) {
+        gl.use_program(Some(&self.program));
+
         gl.viewport(0, 0, self.width, self.height);
 
-        gl.bind_buffer(Gl::ARRAY_BUFFER, Some(&obj.make_buffer(gl)));
-        gl.vertex_attrib_pointer_with_i32(self.vertex_location, 4, Gl::FLOAT, false, 0, 0);
-        gl.enable_vertex_attrib_array(self.vertex_location);
+        gl.bind_buffer(Gl::ARRAY_BUFFER, Some(&obj.shape.get_buffer()));
 
-        gl.use_program(Some(&self.program));
+        gl.vertex_attrib_pointer_with_i32(
+            self.vertex_position_location,
+            3,
+            Gl::FLOAT,
+            false,
+            obj.shape.step() * 4,
+            obj.shape.point_offset() * 4,
+        );
+        gl.enable_vertex_attrib_array(self.vertex_position_location);
+
+        gl.vertex_attrib_pointer_with_i32(
+            self.vertex_normal_location,
+            3,
+            Gl::FLOAT,
+            false,
+            obj.shape.step() * 4,
+            obj.shape.norm_offset() * 4,
+        );
+        gl.enable_vertex_attrib_array(self.vertex_normal_location);
+
+        gl.vertex_attrib_pointer_with_i32(
+            self.vertex_textcoord_location,
+            2,
+            Gl::FLOAT,
+            false,
+            obj.shape.step() * 4,
+            obj.shape.texture_coord_offset() * 4,
+        );
+        gl.enable_vertex_attrib_array(self.vertex_textcoord_location);
 
         gl.uniform2f(
             Some(&self.cell_size_location),
@@ -87,7 +129,7 @@ impl CheckerboardShader {
         gl.enable(Gl::BLEND);
         gl.blend_func(Gl::SRC_ALPHA, Gl::ONE_MINUS_SRC_ALPHA);
 
-        gl.draw_arrays(Gl::TRIANGLES, 0, obj.buffer_length());
+        gl.draw_arrays(Gl::TRIANGLES, 0, obj.shape.buffer_length());
         gl.disable(Gl::BLEND);
     }
 }

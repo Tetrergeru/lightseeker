@@ -24,10 +24,18 @@ impl Matrix {
         zero
     }
 
-    pub fn transform(vector: Vector4) -> Self {
+    pub fn translate(vector: Vector4) -> Self {
         let mut matrix = Self::ident();
         for i in 0..(Self::SIZE - 1) {
             matrix.set(i, 3, vector.get(i));
+        }
+        matrix
+    }
+
+    pub fn scale(factor: f32) -> Self {
+        let mut matrix = Self::ident();
+        for i in 0..(Self::SIZE - 1) {
+            matrix.set(i, i, factor);
         }
         matrix
     }

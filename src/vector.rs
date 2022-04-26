@@ -7,7 +7,7 @@ pub struct Vector2 {
 }
 
 impl Vector2 {
-    pub fn new(x: f32, y: f32) -> Self {
+    pub fn from_xy(x: f32, y: f32) -> Self {
         Self { x, y }
     }
 
@@ -17,21 +17,46 @@ impl Vector2 {
 
     pub fn norm(self) -> Self {
         let len = self.len();
-        Self::new(self.x / len, self.y / len)
+        Self::from_xy(self.x / len, self.y / len)
+    }
+
+    pub fn x(&self) -> f32 {
+        self.x
+    }
+
+    pub fn y(&self) -> f32 {
+        self.y
     }
 }
 
-pub struct Rectangle {
-    pub coord: Vector2,
-    pub size: Vector2,
+#[derive(Clone, Copy, Debug)]
+pub struct Vector3 {
+    pub vector: [f32; 3],
 }
 
-impl Rectangle {
-    pub fn new(x: f32, y: f32, w: f32, h: f32) -> Self {
-        Self {
-            coord: Vector2::new(x, y),
-            size: Vector2::new(w, h),
-        }
+impl Vector3 {
+    pub fn zero() -> Self {
+        Self { vector: [0.0; 3] }
+    }
+
+    pub fn from_xyz(x: f32, y: f32, z: f32) -> Self {
+        Self { vector: [x, y, z] }
+    }
+
+    pub fn get(&self, i: usize) -> f32 {
+        self.vector[i]
+    }
+
+    pub fn x(&self) -> f32 {
+        self.get(0)
+    }
+
+    pub fn y(&self) -> f32 {
+        self.get(1)
+    }
+
+    pub fn z(&self) -> f32 {
+        self.get(2)
     }
 }
 

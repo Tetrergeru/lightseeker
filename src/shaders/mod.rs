@@ -5,10 +5,7 @@ use web_sys::{
     WebGlTexture, WebGlUniformLocation,
 };
 
-use crate::vector::Vector4;
-
 pub mod checkerboard;
-pub mod copy_image;
 
 pub fn make_f32_buffer(gl: &Gl, array: &[f32]) -> WebGlBuffer {
     let buffer = gl.create_buffer().unwrap();
@@ -24,17 +21,6 @@ pub fn make_f32_buffer(gl: &Gl, array: &[f32]) -> WebGlBuffer {
     gl.bind_buffer(Gl::ARRAY_BUFFER, None);
 
     buffer
-}
-
-pub fn make_vector4_buffer(gl: &Gl, array: &[Vector4]) -> WebGlBuffer {
-    let mut vec_f32 = Vec::with_capacity(array.len() * 4);
-    for vector4 in array {
-        vec_f32.push(vector4.x() as f32);
-        vec_f32.push(vector4.y() as f32);
-        vec_f32.push(vector4.z() as f32);
-        vec_f32.push(vector4.w() as f32);
-    }
-    make_f32_buffer(gl, &vec_f32)
 }
 
 pub fn init_shader_program(gl: &Gl, vs_source: &str, fs_source: &str) -> WebGlProgram {
