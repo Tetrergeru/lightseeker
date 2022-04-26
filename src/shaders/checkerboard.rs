@@ -1,6 +1,6 @@
 use web_sys::{WebGl2RenderingContext as Gl, WebGlProgram, WebGlUniformLocation};
 
-use crate::{color::Color, vector::Vector2, object::Object, matrix::Matrix};
+use crate::{color::Color, matrix::Matrix, shape::Shape, vector::Vector2};
 
 use super::{init_shader_program, VS_SOURCE};
 
@@ -45,7 +45,15 @@ impl CheckerboardShader {
         self.height = h;
     }
 
-    pub fn draw(&self, gl: &Gl, obj: &mut Object, proj: Matrix, cell_size: Vector2, color_a: Color, color_b: Color) {
+    pub fn draw(
+        &self,
+        gl: &Gl,
+        obj: &mut Shape,
+        proj: Matrix,
+        cell_size: Vector2,
+        color_a: Color,
+        color_b: Color,
+    ) {
         gl.viewport(0, 0, self.width, self.height);
 
         gl.bind_buffer(Gl::ARRAY_BUFFER, Some(&obj.make_buffer(gl)));

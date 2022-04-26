@@ -3,8 +3,10 @@ use web_sys::{HtmlCanvasElement, WebGl2RenderingContext};
 
 use crate::{
     color::Color,
+    matrix::Matrix,
     shaders::{checkerboard::CheckerboardShader, copy_image::CopyImageShader},
-    vector::Vector2, object::Object, matrix::Matrix,
+    shape::Shape,
+    vector::Vector2,
 };
 
 pub struct GlContext {
@@ -27,11 +29,7 @@ impl GlContext {
             .unwrap();
         gl.enable(WebGl2RenderingContext::DEPTH_TEST);
         Self {
-            copy_image: CopyImageShader::new(
-                &gl,
-                canvas.width() as i32,
-                canvas.height() as i32,
-            ),
+            copy_image: CopyImageShader::new(&gl, canvas.width() as i32, canvas.height() as i32),
             checkerboard: CheckerboardShader::new(
                 &gl,
                 canvas.width() as i32,
@@ -42,7 +40,14 @@ impl GlContext {
         }
     }
 
-    pub fn checkerboard(&self, obj: &mut Object, proj: Matrix, cell_size: f32, color_a: Color, color_b: Color) {
+    pub fn checkerboard(
+        &self,
+        obj: &mut Shape,
+        proj: Matrix,
+        cell_size: f32,
+        color_a: Color,
+        color_b: Color,
+    ) {
         self.checkerboard.draw(
             &self.gl,
             obj,

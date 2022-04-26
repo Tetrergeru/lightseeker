@@ -1,4 +1,4 @@
-use std::ops::{Mul, AddAssign};
+use std::ops::{AddAssign, Mul};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Vector2 {

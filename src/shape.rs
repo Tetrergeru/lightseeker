@@ -2,12 +2,12 @@ use web_sys::{WebGl2RenderingContext, WebGlBuffer};
 
 use crate::{shaders::make_vector4_buffer, vector::Vector4};
 
-pub struct Object {
+pub struct Shape {
     triangles: Vec<Vector4>,
     buffer: Option<WebGlBuffer>,
 }
 
-impl Object {
+impl Shape {
     pub fn cube() -> Self {
         let p000 = Vector4::from_xyz(-1.0, -1.0, -1.0);
         let p111 = Vector4::from_xyz(1.0, 1.0, 1.0);

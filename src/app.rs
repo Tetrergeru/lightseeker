@@ -3,11 +3,11 @@ use wasm_bindgen::JsCast;
 use web_sys::{HtmlCanvasElement, KeyboardEvent};
 use yew::{html, Component, Context, Html, NodeRef};
 
-use crate::{color::Color, gl_context::GlContext, matrix::Matrix, object::Object, vector::Vector4};
+use crate::{color::Color, gl_context::GlContext, matrix::Matrix, shape::Shape, vector::Vector4};
 
 pub struct App {
     canvas_ref: NodeRef,
-    objects: Vec<Object>,
+    objects: Vec<Shape>,
     position: Vector4,
     angle: f32,
     context: Option<GlContext>,
@@ -33,7 +33,7 @@ impl Component for App {
 
         Self {
             canvas_ref: NodeRef::default(),
-            objects: vec![Object::cube()],
+            objects: vec![Shape::cube()],
             position: Vector4::from_xyz(0.0, 0.0, -10.0),
             angle: 0.0,
             context: None,

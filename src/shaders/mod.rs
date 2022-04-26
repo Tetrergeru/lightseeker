@@ -26,7 +26,7 @@ pub fn make_f32_buffer(gl: &Gl, array: &[f32]) -> WebGlBuffer {
     buffer
 }
 
-pub fn make_vector4_buffer(gl: &Gl, array: &[Vector4])-> WebGlBuffer {
+pub fn make_vector4_buffer(gl: &Gl, array: &[Vector4]) -> WebGlBuffer {
     let mut vec_f32 = Vec::with_capacity(array.len() * 4);
     for vector4 in array {
         vec_f32.push(vector4.x() as f32);
