@@ -22,6 +22,8 @@ features = [
   'HtmlCanvasElement',
   'HtmlImageElement',
   'WebGl2RenderingContext',
+  'WebGlFramebuffer',
+  'WebGlRenderbuffer',
   'WebGlUniformLocation',
   'WebGlTexture',
   'CanvasRenderingContext2d',

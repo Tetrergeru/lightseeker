@@ -8,6 +8,7 @@ pub struct Object {
     pub shape: Rc<Shape>,
     pub texture: Rc<Texture>,
     pub transform: Matrix,
+    pub ignored_by_light: bool,
 }
 
 impl Object {
@@ -16,6 +17,12 @@ impl Object {
             shape,
             texture,
             transform,
+            ignored_by_light: false,
         }
+    }
+
+    pub fn ignored_by_light(mut self) -> Self {
+        self.ignored_by_light = true;
+        self
     }
 }

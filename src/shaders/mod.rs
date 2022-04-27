@@ -5,6 +5,7 @@ use web_sys::{
     WebGlTexture, WebGlUniformLocation,
 };
 
+pub mod render_light;
 pub mod view;
 pub mod wire_light;
 
@@ -70,7 +71,9 @@ pub fn load_texture_from_canvas(gl: &Gl, texture: &WebGlTexture, image: &HtmlCan
         image,
     )
     .unwrap();
-    gl.generate_mipmap(Gl::TEXTURE_2D);
+    gl.tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MIN_FILTER, Gl::LINEAR as i32);
+    gl.tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_S, Gl::CLAMP_TO_EDGE as i32);
+    gl.tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_T, Gl::CLAMP_TO_EDGE as i32);
 }
 
 #[wasm_bindgen(module = "/src/shaders/helpers.js")]

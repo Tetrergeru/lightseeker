@@ -6,7 +6,13 @@ in vec2 textCoord;
 out vec4 color;
 
 uniform sampler2D image;
+uniform int isDepth;
 
 void main() {
-    color = texture(image, textCoord);
+    if (isDepth != 0) {
+        float r = texture(image, textCoord).r;
+        color = vec4(r, r, r, 1.0);
+    } else {
+        color = texture(image, textCoord);
+    }
 }

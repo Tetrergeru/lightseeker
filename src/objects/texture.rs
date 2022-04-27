@@ -1,7 +1,6 @@
 use web_sys::{HtmlImageElement, WebGl2RenderingContext, WebGlTexture};
 
 pub struct Texture {
-    _image: HtmlImageElement,
     texture: WebGlTexture,
 }
 
@@ -20,10 +19,11 @@ impl Texture {
         .unwrap();
         gl.generate_mipmap(WebGl2RenderingContext::TEXTURE_2D);
 
-        Self {
-            _image: image,
-            texture,
-        }
+        Self { texture }
+    }
+
+    pub fn from_texture(texture: WebGlTexture) -> Self {
+        Self { texture }
     }
 
     pub fn location(&self) -> &WebGlTexture {

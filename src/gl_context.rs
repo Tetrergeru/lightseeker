@@ -1,15 +1,17 @@
 use wasm_bindgen::JsCast;
-use web_sys::{HtmlCanvasElement, WebGl2RenderingContext};
+use web_sys::{HtmlCanvasElement, WebGl2RenderingContext as Gl};
 
 use crate::light_src::LightSrc;
+use crate::shaders::render_light::RenderLight;
 use crate::shaders::wire_light::WireLight;
 use crate::{matrix::Matrix, objects::object::Object, shaders::view::CheckerboardShader};
 
 pub struct GlContext {
-    gl: WebGl2RenderingContext,
+    gl: Gl,
 
     view: CheckerboardShader,
     wire_light: WireLight,
+    render_light: RenderLight,
 }
 
 impl GlContext {
@@ -20,14 +22,15 @@ impl GlContext {
             .get_context("webgl2")
             .unwrap()
             .unwrap()
-            .dyn_into::<WebGl2RenderingContext>()
+            .dyn_into::<Gl>()
             .unwrap();
-        gl.enable(WebGl2RenderingContext::DEPTH_TEST);
+        gl.enable(Gl::DEPTH_TEST);
         let w = canvas.width() as i32;
         let h = canvas.height() as i32;
         Self {
             view: CheckerboardShader::new(&gl, w, h),
             wire_light: WireLight::new(&gl, w, h),
+            render_light: RenderLight::new(&gl, w, h),
             gl,
         }
     }
@@ -40,7 +43,11 @@ impl GlContext {
         self.wire_light.draw(&self.gl, proj, light.matrix())
     }
 
-    pub fn gl(&self) -> WebGl2RenderingContext {
+    pub fn render_light(&self, obj: &Object, light: &LightSrc) {
+        self.render_light.draw(&self.gl, obj, light)
+    }
+
+    pub fn gl(&self) -> Gl {
         self.gl.clone()
     }
 }

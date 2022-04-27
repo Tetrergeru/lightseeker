@@ -3,7 +3,7 @@ use std::{collections::HashMap, rc::Rc};
 use gloo::{events::EventListener, utils::document};
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::spawn_local;
-use web_sys::{HtmlCanvasElement, KeyboardEvent, MouseEvent, WebGl2RenderingContext};
+use web_sys::{HtmlCanvasElement, KeyboardEvent, MouseEvent, WebGl2RenderingContext as Gl};
 use yew::{html, Component, Context, Html, NodeRef};
 
 use crate::{
@@ -26,7 +26,7 @@ pub struct App {
     currently_downloading: usize,
 
     camera: Camera,
-    light: LightSrc,
+    light: Vec<LightSrc>,
     mouse_down: bool,
     size: Vector2,
 
@@ -64,10 +64,11 @@ impl Component for App {
             objects: vec![],
             currently_downloading: 0,
 
-            camera: Camera::new(Vector3::zero(), 0.0, 0.0).with_aspect(size.x() / size.y()),
+            camera: Camera::new(Vector3::from_xyz(-8.0, 0.0, -8.0), 0.0, 0.0)
+                .with_aspect(size.x() / size.y()),
             mouse_down: false,
             size,
-            light: LightSrc::new(Vector3::from_xyz(0.0, -5.0, 2.0), 0.0, -2.0),
+            light: vec![],
 
             context: None,
             _keydown_listener: keydown_listener,
@@ -200,21 +201,36 @@ impl App {
         .collect()
     }
 
-    fn gl(&self) -> WebGl2RenderingContext {
+    fn gl(&self) -> Gl {
         self.context.as_ref().unwrap().gl()
     }
 
     fn draw(&mut self) {
+        let gl = self.gl();
+        gl.clear(Gl::COLOR_BUFFER_BIT | Gl::DEPTH_BUFFER_BIT);
+        for light in self.light.iter() {
+            self.context
+                .as_ref()
+                .unwrap()
+                .wire_light(light, self.camera.matrix());
+
+            light.bind(&gl);
+            gl.clear(Gl::COLOR_BUFFER_BIT | Gl::DEPTH_BUFFER_BIT);
+            for obj in self.objects.iter_mut() {
+                if obj.ignored_by_light {
+                    continue;
+                }
+                self.context.as_ref().unwrap().render_light(obj, light);
+            }
+            gl.bind_framebuffer(Gl::FRAMEBUFFER, None);
+        }
+
         for obj in self.objects.iter_mut() {
             self.context
                 .as_ref()
                 .unwrap()
-                .view(obj, self.camera.matrix() * obj.transform);
+                .view(obj, self.camera.matrix());
         }
-        self.context
-            .as_ref()
-            .unwrap()
-            .wire_light(&self.light, self.camera.matrix());
     }
 
     fn single_download_finished(&mut self) {
@@ -248,5 +264,25 @@ impl App {
             self.textures["Carpet"].clone(),
             Matrix::translate(Vector3::from_xyz(0.0, -2.0, 0.0)) * Matrix::scale(5.0),
         ));
+
+        let light = LightSrc::new(
+            &self.gl(),
+            Vector3::from_xyz(0.0, -3.0, 5.0),
+            std::f32::consts::PI,
+            -0.5,
+        );
+
+        self.objects.push(
+            Object::new(
+                self.shapes["Floor"].clone(),
+                light.texture().clone(),
+                Matrix::translate(Vector3::from_xyz(7.0, 0.0, 7.0))
+                    * Matrix::rotation_x(0.7 * std::f32::consts::PI)
+                    * Matrix::scale(3.0),
+            )
+            .ignored_by_light(),
+        );
+
+        self.light.push(light);
     }
 }
