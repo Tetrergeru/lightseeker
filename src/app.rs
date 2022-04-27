@@ -229,7 +229,7 @@ impl App {
             self.context
                 .as_ref()
                 .unwrap()
-                .view(obj, self.camera.matrix());
+                .view(obj, self.camera.matrix(), &self.light[0]);
         }
     }
 
@@ -269,20 +269,8 @@ impl App {
             &self.gl(),
             Vector3::from_xyz(0.0, -3.0, 5.0),
             std::f32::consts::PI,
-            -0.5,
+            -0.6,
         );
-
-        self.objects.push(
-            Object::new(
-                self.shapes["Floor"].clone(),
-                light.texture().clone(),
-                Matrix::translate(Vector3::from_xyz(7.0, 0.0, 7.0))
-                    * Matrix::rotation_x(0.7 * std::f32::consts::PI)
-                    * Matrix::scale(3.0),
-            )
-            .ignored_by_light(),
-        );
-
         self.light.push(light);
     }
 }

@@ -60,7 +60,7 @@ impl LightSrc {
 
     fn eval_matrix(&mut self) {
         self.matrix = Matrix::ident()
-            * Matrix::perspective(std::f32::consts::PI / 4.0, 1.0, 1.0, 8.0)
+            * Matrix::perspective(std::f32::consts::PI / 4.0, 1.0, 1.0, 20.0)
             * Matrix::rotation_x(self.angle_v)
             * Matrix::rotation_y(self.angle_h)
             * Matrix::translate(self.position)

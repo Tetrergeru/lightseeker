@@ -35,8 +35,8 @@ impl GlContext {
         }
     }
 
-    pub fn view(&self, obj: &Object, proj: Matrix) {
-        self.view.draw(&self.gl, obj, proj);
+    pub fn view(&self, obj: &Object, proj: Matrix, light: &LightSrc) {
+        self.view.draw(&self.gl, obj, proj, light);
     }
 
     pub fn wire_light(&self, light: &LightSrc, proj: Matrix) {
