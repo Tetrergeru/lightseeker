@@ -209,7 +209,7 @@ impl App {
             self.context
                 .as_ref()
                 .unwrap()
-                .checkerboard(obj, self.camera.matrix() * obj.transform);
+                .view(obj, self.camera.matrix() * obj.transform);
         }
         self.context
             .as_ref()

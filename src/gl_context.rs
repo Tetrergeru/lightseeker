@@ -3,12 +3,12 @@ use web_sys::{HtmlCanvasElement, WebGl2RenderingContext};
 
 use crate::light_src::LightSrc;
 use crate::shaders::wire_light::WireLight;
-use crate::{matrix::Matrix, objects::object::Object, shaders::checkerboard::CheckerboardShader};
+use crate::{matrix::Matrix, objects::object::Object, shaders::view::CheckerboardShader};
 
 pub struct GlContext {
     gl: WebGl2RenderingContext,
 
-    checkerboard: CheckerboardShader,
+    view: CheckerboardShader,
     wire_light: WireLight,
 }
 
@@ -26,14 +26,14 @@ impl GlContext {
         let w = canvas.width() as i32;
         let h = canvas.height() as i32;
         Self {
-            checkerboard: CheckerboardShader::new(&gl, w, h),
+            view: CheckerboardShader::new(&gl, w, h),
             wire_light: WireLight::new(&gl, w, h),
             gl,
         }
     }
 
-    pub fn checkerboard(&self, obj: &Object, proj: Matrix) {
-        self.checkerboard.draw(&self.gl, obj, proj);
+    pub fn view(&self, obj: &Object, proj: Matrix) {
+        self.view.draw(&self.gl, obj, proj);
     }
 
     pub fn wire_light(&self, light: &LightSrc, proj: Matrix) {

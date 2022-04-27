@@ -5,7 +5,7 @@ use web_sys::{
     WebGlTexture, WebGlUniformLocation,
 };
 
-pub mod checkerboard;
+pub mod view;
 pub mod wire_light;
 
 pub fn make_f32_buffer(gl: &Gl, array: &[f32]) -> WebGlBuffer {
@@ -78,5 +78,3 @@ extern "C" {
     #[wasm_bindgen(js_name = "uniformTexture")]
     pub fn uniform_texture(gl: &Gl, location: &WebGlUniformLocation, texture: &WebGlTexture);
 }
-
-const VS_SOURCE: &str = include_str!("src/ident.vert");
