@@ -10,6 +10,7 @@ use crate::{
     camera::Camera,
     download::{download_image, download_text},
     gl_context::GlContext,
+    light_src::LightSrc,
     matrix::Matrix,
     objects::{object::Object, shape::Shape, texture::Texture},
     vector::{Vector2, Vector3},
@@ -25,6 +26,7 @@ pub struct App {
     currently_downloading: usize,
 
     camera: Camera,
+    light: LightSrc,
     mouse_down: bool,
     size: Vector2,
 
@@ -65,6 +67,7 @@ impl Component for App {
             camera: Camera::new(Vector3::zero(), 0.0, 0.0).with_aspect(size.x() / size.y()),
             mouse_down: false,
             size,
+            light: LightSrc::new(Vector3::from_xyz(0.0, -5.0, 2.0), 0.0, -2.0),
 
             context: None,
             _keydown_listener: keydown_listener,
@@ -208,6 +211,10 @@ impl App {
                 .unwrap()
                 .checkerboard(obj, self.camera.matrix() * obj.transform);
         }
+        self.context
+            .as_ref()
+            .unwrap()
+            .wire_light(&self.light, self.camera.matrix());
     }
 
     fn single_download_finished(&mut self) {
@@ -222,7 +229,9 @@ impl App {
         self.objects.push(Object::new(
             self.shapes["Skull"].clone(),
             self.textures["Skull"].clone(),
-            Matrix::translate(Vector3::from_xyz(0.0, -0.3, 0.0)) * Matrix::rotation_x(1.2 * std::f32::consts::PI / 2.0) * Matrix::scale(0.1),
+            Matrix::translate(Vector3::from_xyz(0.0, -0.3, 0.0))
+                * Matrix::rotation_x(1.2 * std::f32::consts::PI / 2.0)
+                * Matrix::scale(0.1),
         ));
         self.objects.push(Object::new(
             self.shapes["Cube"].clone(),

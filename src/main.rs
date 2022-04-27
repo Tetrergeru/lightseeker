@@ -3,6 +3,7 @@ pub mod camera;
 pub mod color;
 pub mod download;
 pub mod gl_context;
+pub mod light_src;
 pub mod matrix;
 pub mod objects;
 pub mod shaders;

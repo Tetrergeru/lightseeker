@@ -6,6 +6,7 @@ use web_sys::{
 };
 
 pub mod checkerboard;
+pub mod wire_light;
 
 pub fn make_f32_buffer(gl: &Gl, array: &[f32]) -> WebGlBuffer {
     let buffer = gl.create_buffer().unwrap();
