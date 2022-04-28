@@ -11,8 +11,8 @@ use crate::{
     download::{download_image, download_text},
     gl_context::GlContext,
     light_src::LightSrc,
-    matrix::Matrix,
     objects::{object::Object, shape::Shape, texture::Texture},
+    transform::Transform,
     vector::{Vector2, Vector3},
 };
 
@@ -86,6 +86,7 @@ impl Component for App {
                     "KeyD" => self.camera.move_h(Vector2::from_xy(-0.2, 0.0)),
                     _ => (),
                 }
+                log::debug!("update KeyDown player.position {:?}", self.camera.position);
                 self.draw();
                 false
             }
@@ -107,7 +108,6 @@ impl Component for App {
                 if self.mouse_down {
                     let x = e.movement_x() as f32;
                     let y = e.movement_y() as f32;
-                    log::debug!("Msg::MouseMove x = {}, y = {}", x, y);
                     self.camera.rotate_v(-y / self.size.y() * 10.0);
                     self.camera.rotate_h(x / self.size.x() * 10.0);
                     self.draw();
@@ -242,27 +242,34 @@ impl App {
     }
 
     fn on_downloaded(&mut self) {
+        // self.objects.push(Object::new(
+        //     self.shapes["Skull"].clone(),
+        //     self.textures["Skull"].clone(),
+        //     {
+        //         let mut t = Transform::from_xyz(0.0, -0.3, 0.0);
+        //         // t.rotate_v(1.2 * std::f32::consts::PI / 2.0);
+        //         // t.scale(0.1);
+        //         t
+        //     },
+        // ));
         self.objects.push(Object::new(
-            self.shapes["Skull"].clone(),
-            self.textures["Skull"].clone(),
-            Matrix::translate(Vector3::from_xyz(0.0, -0.3, 0.0))
-                * Matrix::rotation_x(1.2 * std::f32::consts::PI / 2.0)
-                * Matrix::scale(0.1),
+            self.shapes["Cube"].clone(),
+            self.textures["Grass"].clone(),
+            Transform::from_xyz(5.0, -1.0, 5.0),
         ));
         self.objects.push(Object::new(
             self.shapes["Cube"].clone(),
             self.textures["Grass"].clone(),
-            Matrix::translate(Vector3::from_xyz(5.0, -1.0, 5.0)),
-        ));
-        self.objects.push(Object::new(
-            self.shapes["Cube"].clone(),
-            self.textures["Grass"].clone(),
-            Matrix::translate(Vector3::from_xyz(0.0, -1.0, 0.0)),
+            Transform::from_xyz(0.0, -1.0, 0.0),
         ));
         self.objects.push(Object::new(
             self.shapes["Floor"].clone(),
             self.textures["Carpet"].clone(),
-            Matrix::translate(Vector3::from_xyz(0.0, -2.0, 0.0)) * Matrix::scale(5.0),
+            {
+                let mut t = Transform::from_xyz(0.0, -2.0, 0.0);
+                t.scale(5.0);
+                t
+            },
         ));
 
         let light = LightSrc::new(
@@ -271,6 +278,10 @@ impl App {
             std::f32::consts::PI,
             -0.6,
         );
+
+        log::debug!("View draw light.direction {:?}", light.direction());
+        log::debug!("View draw light.position {:?}", light.position());
+
         self.light.push(light);
     }
 }

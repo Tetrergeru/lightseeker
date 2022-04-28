@@ -3,7 +3,7 @@ use web_sys::{WebGl2RenderingContext as Gl, WebGlProgram, WebGlUniformLocation};
 use super::init_shader_program;
 use crate::{light_src::LightSrc, matrix::Matrix, objects::object::Object};
 
-pub struct CheckerboardShader {
+pub struct ViewShader {
     program: WebGlProgram,
 
     width: i32,
@@ -15,16 +15,19 @@ pub struct CheckerboardShader {
 
     camera_location: WebGlUniformLocation,
     position_location: WebGlUniformLocation,
+    normal_mat_location: WebGlUniformLocation,
     texture_location: WebGlUniformLocation,
     is_depth_location: WebGlUniformLocation,
     light_location: WebGlUniformLocation,
     lightmap_location: WebGlUniformLocation,
+    light_pos_location: WebGlUniformLocation,
+    light_dir_location: WebGlUniformLocation,
 }
 
 const FS_SOURCE: &str = include_str!("src/view.frag");
 const VS_SOURCE: &str = include_str!("src/view.vert");
 
-impl CheckerboardShader {
+impl ViewShader {
     pub fn new(gl: &Gl, width: i32, height: i32) -> Self {
         let program = init_shader_program(gl, VS_SOURCE, FS_SOURCE);
 
@@ -34,10 +37,13 @@ impl CheckerboardShader {
 
         let camera_location = gl.get_uniform_location(&program, "camera").unwrap();
         let position_location = gl.get_uniform_location(&program, "position").unwrap();
+        let normal_mat_location = gl.get_uniform_location(&program, "normalMat").unwrap();
         let texture_location = gl.get_uniform_location(&program, "image").unwrap();
         let is_depth_location = gl.get_uniform_location(&program, "isDepth").unwrap();
         let light_location = gl.get_uniform_location(&program, "light").unwrap();
         let lightmap_location = gl.get_uniform_location(&program, "lightmap").unwrap();
+        let light_pos_location = gl.get_uniform_location(&program, "lightLocation").unwrap();
+        let light_dir_location = gl.get_uniform_location(&program, "lightDirection").unwrap();
         Self {
             program,
             width,
@@ -49,10 +55,13 @@ impl CheckerboardShader {
 
             camera_location,
             position_location,
+            normal_mat_location,
             texture_location,
             is_depth_location,
             light_location,
             lightmap_location,
+            light_pos_location,
+            light_dir_location,
         }
     }
 
@@ -100,15 +109,27 @@ impl CheckerboardShader {
 
         gl.uniform_matrix4fv_with_f32_array(Some(&self.camera_location), true, &proj);
 
-        gl.uniform_matrix4fv_with_f32_array(Some(&self.position_location), true, &obj.transform);
+        gl.uniform_matrix4fv_with_f32_array(
+            Some(&self.position_location),
+            true,
+            &obj.transform_matrix(),
+        );
 
-        log::debug!("View draw light.matrix {:?}", light.matrix());
+        gl.uniform_matrix4fv_with_f32_array(
+            Some(&self.normal_mat_location),
+            true,
+            &obj.normal_matrix(),
+        );
+
         gl.uniform_matrix4fv_with_f32_array(Some(&self.light_location), true, &light.matrix());
 
         gl.uniform1i(
             Some(&self.is_depth_location),
             if obj.ignored_by_light { 1 } else { 0 },
         );
+
+        gl.uniform3fv_with_f32_array(Some(&self.light_pos_location), &light.position());
+        gl.uniform3fv_with_f32_array(Some(&self.light_dir_location), &light.direction());
 
         gl.active_texture(Gl::TEXTURE0);
         gl.bind_texture(Gl::TEXTURE_2D, Some(obj.texture.location()));

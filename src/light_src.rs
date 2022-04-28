@@ -9,6 +9,8 @@ pub struct LightSrc {
     pub angle_h: f32,
     pub angle_v: f32,
 
+    w: u32,
+    h: u32,
     matrix: Matrix,
     framebuffer: WebGlFramebuffer,
     texture: Rc<Texture>,
@@ -16,8 +18,8 @@ pub struct LightSrc {
 
 impl LightSrc {
     pub fn new(gl: &Gl, point: Vector3, angle_h: f32, angle_v: f32) -> Self {
-        let w = 512_u32;
-        let h = 512_u32;
+        let w = 2048;
+        let h = 2048;
 
         let texture = Self::create_light_texture(gl, w, h);
         let framebuffer = gl.create_framebuffer().unwrap();
@@ -29,6 +31,8 @@ impl LightSrc {
             matrix: Matrix::zero(),
             framebuffer,
             texture: Rc::new(Texture::from_texture(texture)),
+            w,
+            h,
         };
         light.eval_matrix();
         light
@@ -60,7 +64,7 @@ impl LightSrc {
 
     fn eval_matrix(&mut self) {
         self.matrix = Matrix::ident()
-            * Matrix::perspective(std::f32::consts::PI / 4.0, 1.0, 1.0, 20.0)
+            * Matrix::perspective(std::f32::consts::PI / 2.0, 1.0, 1.0, 20.0)
             * Matrix::rotation_x(self.angle_v)
             * Matrix::rotation_y(self.angle_h)
             * Matrix::translate(self.position)
@@ -78,6 +82,17 @@ impl LightSrc {
         &self.texture
     }
 
+    pub fn position(&self) -> Vector3 {
+        self.position
+    }
+
+    pub fn direction(&self) -> Vector3 {
+        Matrix::ident()
+            * Matrix::rotation_x(self.angle_v)
+            * Matrix::rotation_y(self.angle_h)
+            * Vector3::from_xyz(0.0, 0.0, 1.0)
+    }
+
     pub fn bind(&self, gl: &Gl) {
         gl.bind_framebuffer(Gl::FRAMEBUFFER, Some(self.framebuffer()));
         gl.framebuffer_texture_2d(
@@ -87,6 +102,6 @@ impl LightSrc {
             Some(self.texture().location()),
             0,
         );
-        gl.viewport(0, 0, 512, 512);
+        gl.viewport(0, 0, self.w as i32, self.h as i32);
     }
 }

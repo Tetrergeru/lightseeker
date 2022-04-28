@@ -4,12 +4,12 @@ use web_sys::{HtmlCanvasElement, WebGl2RenderingContext as Gl};
 use crate::light_src::LightSrc;
 use crate::shaders::render_light::RenderLight;
 use crate::shaders::wire_light::WireLight;
-use crate::{matrix::Matrix, objects::object::Object, shaders::view::CheckerboardShader};
+use crate::{matrix::Matrix, objects::object::Object, shaders::view::ViewShader};
 
 pub struct GlContext {
     gl: Gl,
 
-    view: CheckerboardShader,
+    view: ViewShader,
     wire_light: WireLight,
     render_light: RenderLight,
 }
@@ -28,7 +28,7 @@ impl GlContext {
         let w = canvas.width() as i32;
         let h = canvas.height() as i32;
         Self {
-            view: CheckerboardShader::new(&gl, w, h),
+            view: ViewShader::new(&gl, w, h),
             wire_light: WireLight::new(&gl, w, h),
             render_light: RenderLight::new(&gl, w, h),
             gl,

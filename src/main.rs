@@ -7,6 +7,7 @@ pub mod light_src;
 pub mod matrix;
 pub mod objects;
 pub mod shaders;
+pub mod transform;
 pub mod vector;
 
 fn main() {

@@ -1,4 +1,4 @@
-use std::ops::{AddAssign, Mul, Sub};
+use std::ops::{AddAssign, Deref, Mul, MulAssign, Sub};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Vector2 {
@@ -39,6 +39,10 @@ impl Vector3 {
         Self { vector: [0.0; 3] }
     }
 
+    pub fn repeat(v: f32) -> Self {
+        Self { vector: [v; 3] }
+    }
+
     pub fn from_xyz(x: f32, y: f32, z: f32) -> Self {
         Self { vector: [x, y, z] }
     }
@@ -73,6 +77,14 @@ impl Vector3 {
     }
 }
 
+impl Deref for Vector3 {
+    type Target = [f32];
+
+    fn deref(&self) -> &Self::Target {
+        &self.vector
+    }
+}
+
 impl Sub for Vector3 {
     type Output = Vector3;
 
@@ -85,6 +97,14 @@ impl AddAssign for Vector3 {
     fn add_assign(&mut self, rhs: Self) {
         for i in 0..3 {
             self.vector[i] += rhs.vector[i];
+        }
+    }
+}
+
+impl MulAssign<f32> for Vector3 {
+    fn mul_assign(&mut self, rhs: f32) {
+        for i in 0..3 {
+            self.vector[i] *= rhs;
         }
     }
 }
