@@ -8,6 +8,9 @@ pub struct LightSrc {
     pub position: Vector3,
     pub angle_h: f32,
     pub angle_v: f32,
+    pub fov: f32,
+    pub diffuse: f32,
+    pub specular: f32,
 
     w: u32,
     h: u32,
@@ -31,11 +34,37 @@ impl LightSrc {
             matrix: Matrix::zero(),
             framebuffer,
             texture: Rc::new(Texture::from_texture(texture)),
+            fov: std::f32::consts::PI / 4.0,
+            diffuse: 1.0,
+            specular: 1.0,
             w,
             h,
         };
         light.eval_matrix();
         light
+    }
+
+    pub fn move_h(&mut self, x: f32, y: f32) {
+        let delta = Matrix::rotation_y(-self.angle_h) * Vector3::from_xyz(x, 0.0, y);
+        for i in 0..3 {
+            self.position.set(i, self.position.get(i) + delta.get(i))
+        }
+        self.eval_matrix();
+    }
+
+    pub fn rotate_h(&mut self, angle: f32) {
+        self.angle_h += angle;
+        self.eval_matrix();
+    }
+
+    pub fn rotate_v(&mut self, angle: f32) {
+        self.angle_v += angle;
+        self.eval_matrix();
+    }
+
+    pub fn add_fov(&mut self, df: f32) {
+        self.fov += df;
+        self.eval_matrix();
     }
 
     fn create_light_texture(gl: &Gl, w: u32, h: u32) -> WebGlTexture {
@@ -64,10 +93,10 @@ impl LightSrc {
 
     fn eval_matrix(&mut self) {
         self.matrix = Matrix::ident()
-            * Matrix::perspective(std::f32::consts::PI / 2.0, 1.0, 1.0, 20.0)
-            * Matrix::rotation_x(self.angle_v)
-            * Matrix::rotation_y(self.angle_h)
-            * Matrix::translate(self.position)
+            * Matrix::perspective(self.fov, 1.0, 1.0, 20.0)
+            * Matrix::rotation_x(-self.angle_v)
+            * Matrix::rotation_y(-self.angle_h)
+            * Matrix::translate(self.position * -1.0)
     }
 
     pub fn matrix(&self) -> Matrix {
@@ -88,9 +117,9 @@ impl LightSrc {
 
     pub fn direction(&self) -> Vector3 {
         Matrix::ident()
-            * Matrix::rotation_x(self.angle_v)
             * Matrix::rotation_y(self.angle_h)
-            * Vector3::from_xyz(0.0, 0.0, 1.0)
+            * Matrix::rotation_x(self.angle_v)
+            * Vector3::from_xyz(0.0, 0.0, -1.0)
     }
 
     pub fn bind(&self, gl: &Gl) {

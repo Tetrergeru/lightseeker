@@ -1,6 +1,7 @@
 use wasm_bindgen::JsCast;
 use web_sys::{HtmlCanvasElement, WebGl2RenderingContext as Gl};
 
+use crate::camera::Camera;
 use crate::light_src::LightSrc;
 use crate::shaders::render_light::RenderLight;
 use crate::shaders::wire_light::WireLight;
@@ -35,8 +36,8 @@ impl GlContext {
         }
     }
 
-    pub fn view(&self, obj: &Object, proj: Matrix, light: &LightSrc) {
-        self.view.draw(&self.gl, obj, proj, light);
+    pub fn view(&self, obj: &Object, camera: &Camera, light: &[LightSrc]) {
+        self.view.draw(&self.gl, obj, camera, light);
     }
 
     pub fn wire_light(&self, light: &LightSrc, proj: Matrix) {

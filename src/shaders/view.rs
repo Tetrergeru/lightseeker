@@ -1,7 +1,7 @@
 use web_sys::{WebGl2RenderingContext as Gl, WebGlProgram, WebGlUniformLocation};
 
 use super::init_shader_program;
-use crate::{light_src::LightSrc, matrix::Matrix, objects::object::Object};
+use crate::{camera::Camera, light_src::LightSrc, objects::object::Object};
 
 pub struct ViewShader {
     program: WebGlProgram,
@@ -14,14 +14,12 @@ pub struct ViewShader {
     vertex_textcoord_location: u32,
 
     camera_location: WebGlUniformLocation,
+    camera_pos_location: WebGlUniformLocation,
     position_location: WebGlUniformLocation,
     normal_mat_location: WebGlUniformLocation,
     texture_location: WebGlUniformLocation,
     is_depth_location: WebGlUniformLocation,
-    light_location: WebGlUniformLocation,
-    lightmap_location: WebGlUniformLocation,
-    light_pos_location: WebGlUniformLocation,
-    light_dir_location: WebGlUniformLocation,
+    light: Vec<LightUniform>,
 }
 
 const FS_SOURCE: &str = include_str!("src/view.frag");
@@ -36,15 +34,19 @@ impl ViewShader {
         let vertex_textcoord_location = gl.get_attrib_location(&program, "vertexTexture") as u32;
 
         let camera_location = gl.get_uniform_location(&program, "camera").unwrap();
+        let camera_pos_location = gl.get_uniform_location(&program, "cameraPosition").unwrap();
         let position_location = gl.get_uniform_location(&program, "position").unwrap();
         let normal_mat_location = gl.get_uniform_location(&program, "normalMat").unwrap();
         let texture_location = gl.get_uniform_location(&program, "image").unwrap();
         let is_depth_location = gl.get_uniform_location(&program, "isDepth").unwrap();
-        let light_location = gl.get_uniform_location(&program, "light").unwrap();
-        let lightmap_location = gl.get_uniform_location(&program, "lightmap").unwrap();
-        let light_pos_location = gl.get_uniform_location(&program, "lightLocation").unwrap();
-        let light_dir_location = gl.get_uniform_location(&program, "lightDirection").unwrap();
+
+        let mut light = vec![];
+        for i in 0..16 {
+            light.push(LightUniform::new(gl, &program, &format!("lights[{}]", i)));
+        }
+
         Self {
+            light,
             program,
             width,
             height,
@@ -54,14 +56,11 @@ impl ViewShader {
             vertex_textcoord_location,
 
             camera_location,
+            camera_pos_location,
             position_location,
             normal_mat_location,
             texture_location,
             is_depth_location,
-            light_location,
-            lightmap_location,
-            light_pos_location,
-            light_dir_location,
         }
     }
 
@@ -70,7 +69,7 @@ impl ViewShader {
         self.height = h;
     }
 
-    pub fn draw(&self, gl: &Gl, obj: &Object, proj: Matrix, light: &LightSrc) {
+    pub fn draw(&self, gl: &Gl, obj: &Object, camera: &Camera, light: &[LightSrc]) {
         gl.use_program(Some(&self.program));
 
         gl.viewport(0, 0, self.width, self.height);
@@ -107,7 +106,8 @@ impl ViewShader {
         );
         gl.enable_vertex_attrib_array(self.vertex_textcoord_location);
 
-        gl.uniform_matrix4fv_with_f32_array(Some(&self.camera_location), true, &proj);
+        gl.uniform_matrix4fv_with_f32_array(Some(&self.camera_location), true, &camera.matrix());
+        gl.uniform3fv_with_f32_array(Some(&self.camera_pos_location), &camera.position);
 
         gl.uniform_matrix4fv_with_f32_array(
             Some(&self.position_location),
@@ -121,28 +121,71 @@ impl ViewShader {
             &obj.normal_matrix(),
         );
 
-        gl.uniform_matrix4fv_with_f32_array(Some(&self.light_location), true, &light.matrix());
-
         gl.uniform1i(
             Some(&self.is_depth_location),
             if obj.ignored_by_light { 1 } else { 0 },
         );
 
-        gl.uniform3fv_with_f32_array(Some(&self.light_pos_location), &light.position());
-        gl.uniform3fv_with_f32_array(Some(&self.light_dir_location), &light.direction());
-
         gl.active_texture(Gl::TEXTURE0);
         gl.bind_texture(Gl::TEXTURE_2D, Some(obj.texture.location()));
         gl.uniform1i(Some(&self.texture_location), 0);
 
-        gl.active_texture(Gl::TEXTURE1);
-        gl.bind_texture(Gl::TEXTURE_2D, Some(light.texture().location()));
-        gl.uniform1i(Some(&self.lightmap_location), 1);
+        for (i, light) in light.iter().enumerate() {
+            self.light[i].bind(gl, light, Gl::TEXTURE1 + i as u32);
+        }
+        if light.len() < self.light.len() {
+            self.light[light.len()].bind_noting(gl);
+        }
 
         gl.enable(Gl::BLEND);
         gl.blend_func(Gl::SRC_ALPHA, Gl::ONE_MINUS_SRC_ALPHA);
 
         gl.draw_arrays(Gl::TRIANGLES, 0, obj.shape.buffer_length());
         gl.disable(Gl::BLEND);
+    }
+}
+
+struct LightUniform {
+    diffuse: WebGlUniformLocation,
+    specular: WebGlUniformLocation,
+    projection: WebGlUniformLocation,
+    map: WebGlUniformLocation,
+    position: WebGlUniformLocation,
+    direction: WebGlUniformLocation,
+    fov: WebGlUniformLocation,
+}
+
+impl LightUniform {
+    fn new(gl: &Gl, program: &WebGlProgram, prefix: &str) -> Self {
+        let uniform = |name: &str| {
+            gl.get_uniform_location(program, &format!("{}.{}", prefix, name))
+                .unwrap()
+        };
+        Self {
+            diffuse: uniform("diffuse"),
+            specular: uniform("specular"),
+            projection: uniform("projection"),
+            map: uniform("map"),
+            position: uniform("position"),
+            direction: uniform("direction"),
+            fov: uniform("fov"),
+        }
+    }
+
+    fn bind_noting(&self, gl: &Gl) {
+        gl.uniform1f(Some(&self.diffuse), -1.0);
+    }
+
+    fn bind(&self, gl: &Gl, light: &LightSrc, texture: u32) {
+        gl.uniform_matrix4fv_with_f32_array(Some(&self.projection), true, &light.matrix());
+        gl.uniform3fv_with_f32_array(Some(&self.position), &light.position());
+        gl.uniform3fv_with_f32_array(Some(&self.direction), &light.direction());
+        gl.uniform1f(Some(&self.diffuse), light.diffuse);
+        gl.uniform1f(Some(&self.specular), light.specular);
+        gl.uniform1f(Some(&self.fov), light.fov);
+
+        gl.active_texture(texture);
+        gl.bind_texture(Gl::TEXTURE_2D, Some(light.texture().location()));
+        gl.uniform1i(Some(&self.map), (texture - Gl::TEXTURE0) as i32);
     }
 }

@@ -93,6 +93,15 @@ impl Sub for Vector3 {
     }
 }
 
+impl Mul<f32> for Vector3 {
+    type Output = Self;
+
+    fn mul(mut self, rhs: f32) -> Self {
+        self *= rhs;
+        self
+    }
+}
+
 impl AddAssign for Vector3 {
     fn add_assign(&mut self, rhs: Self) {
         for i in 0..3 {

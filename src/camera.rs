@@ -66,4 +66,11 @@ impl Camera {
     pub fn matrix(&self) -> Matrix {
         self.matrix
     }
+
+    pub fn direction(&self) -> Vector3 {
+        Matrix::ident()
+            * Matrix::rotation_x(self.angle_v)
+            * Matrix::rotation_y(self.angle_h)
+            * Vector3::from_xyz(0.0, 0.0, 1.0)
+    }
 }

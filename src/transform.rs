@@ -49,7 +49,7 @@ impl Transform {
     }
 
     pub fn normal_matrix(&self) -> Matrix {
-        Matrix::ident()
+        Matrix::ident() * Matrix::rotation_x(-self.angle_v) * Matrix::rotation_y(-self.angle_h)
     }
 
     pub fn translate(&mut self, dx: f32, dy: f32, dz: f32) {

@@ -12,12 +12,10 @@ out vec4 fragPosition;
 uniform mat4 position;
 uniform mat4 normalMat;
 uniform mat4 camera;
-uniform mat4 light;
 
 void main() {
     gl_Position = camera * position * vec4(vertexPosition, 1.0);
 
-    fragInLight = light * position * vec4(vertexPosition, 1.0);
     textCoord = vertexTexture;
     fragNormal = normalMat * vec4(vertexNormal, 1.0);
     fragPosition = position * vec4(vertexPosition, 1.0);

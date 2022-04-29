@@ -84,7 +84,7 @@ impl ObjParser {
                 self.vertices.push(v1.expect_some());
                 self.vertices.push(v2.expect_some());
             } else {
-                let normal = (v1.point - v0.point).cross(v2.point - v0.point);
+                let normal = (v2.point - v0.point).cross(v1.point - v0.point);
                 self.vertices.push(v0.expect_none(normal));
                 self.vertices.push(v1.expect_none(normal));
                 self.vertices.push(v2.expect_none(normal));
