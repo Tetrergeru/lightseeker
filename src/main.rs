@@ -9,6 +9,7 @@ pub mod objects;
 pub mod shaders;
 pub mod transform;
 pub mod vector;
+pub mod point_light_src;
 
 fn main() {
     wasm_logger::init(wasm_logger::Config::default());

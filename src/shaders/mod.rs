@@ -8,6 +8,7 @@ use web_sys::{
 pub mod render_light;
 pub mod view;
 pub mod wire_light;
+pub mod render_point_light;
 
 pub fn make_f32_buffer(gl: &Gl, array: &[f32]) -> WebGlBuffer {
     let buffer = gl.create_buffer().unwrap();

@@ -72,7 +72,7 @@ float calculateProjectorLight(Light light, vec3 normal) {
 
 void main() {
     if (isDepth != 0) {
-        color = vec4(texture(image, textCoord).rrr, 1.0);
+        color = vec4(texture(image, textCoord).rgb, 1.0);
         return;
     }
 

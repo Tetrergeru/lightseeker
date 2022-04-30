@@ -4,7 +4,9 @@ use web_sys::{HtmlCanvasElement, WebGl2RenderingContext as Gl};
 use crate::camera::Camera;
 use crate::light_src::LightSrc;
 use crate::shaders::render_light::RenderLight;
+use crate::shaders::render_point_light::RenderPointLight;
 use crate::shaders::wire_light::WireLight;
+use crate::vector::Vector3;
 use crate::{matrix::Matrix, objects::object::Object, shaders::view::ViewShader};
 
 pub struct GlContext {
@@ -13,6 +15,7 @@ pub struct GlContext {
     view: ViewShader,
     wire_light: WireLight,
     render_light: RenderLight,
+    render_point_light: RenderPointLight,
 }
 
 impl GlContext {
@@ -32,6 +35,7 @@ impl GlContext {
             view: ViewShader::new(&gl, w, h),
             wire_light: WireLight::new(&gl, w, h),
             render_light: RenderLight::new(&gl, w, h),
+            render_point_light: RenderPointLight::new(&gl, w, h),
             gl,
         }
     }
@@ -46,6 +50,10 @@ impl GlContext {
 
     pub fn render_light(&self, obj: &Object, light: &LightSrc) {
         self.render_light.draw(&self.gl, obj, light)
+    }
+
+    pub fn render_point_light(&self, obj: &Object, light: Vector3, flip: f32) {
+        self.render_point_light.draw(&self.gl, obj, light, flip)
     }
 
     pub fn gl(&self) -> Gl {

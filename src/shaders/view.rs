@@ -126,16 +126,18 @@ impl ViewShader {
             if obj.ignored_by_light { 1 } else { 0 },
         );
 
+        if !obj.ignored_by_light {
+            for (i, light) in light.iter().enumerate() {
+                self.light[i].bind(gl, light, Gl::TEXTURE1 + i as u32);
+            }
+            if light.len() < self.light.len() {
+                self.light[light.len()].bind_noting(gl);
+            }
+        }
+
         gl.active_texture(Gl::TEXTURE0);
         gl.bind_texture(Gl::TEXTURE_2D, Some(obj.texture.location()));
         gl.uniform1i(Some(&self.texture_location), 0);
-
-        for (i, light) in light.iter().enumerate() {
-            self.light[i].bind(gl, light, Gl::TEXTURE1 + i as u32);
-        }
-        if light.len() < self.light.len() {
-            self.light[light.len()].bind_noting(gl);
-        }
 
         gl.enable(Gl::BLEND);
         gl.blend_func(Gl::SRC_ALPHA, Gl::ONE_MINUS_SRC_ALPHA);
