@@ -13,8 +13,8 @@ pub struct PointLightSrc {
     h: u32,
     matrix: Matrix,
     framebuffer: WebGlFramebuffer,
-    texture: Rc<Texture>,
-    depth: WebGlTexture,
+    texture: WebGlTexture,
+    depth: Rc<Texture>,
 }
 
 impl PointLightSrc {
@@ -30,12 +30,12 @@ impl PointLightSrc {
             position: point,
             matrix: Matrix::zero(),
             framebuffer,
-            texture: Rc::new(Texture::from_texture(texture)),
+            texture,
             diffuse: 1.0,
             specular: 1.0,
             w,
             h,
-            depth,
+            depth: Rc::new(Texture::from_texture(depth)),
         };
         light.eval_matrix();
         light
@@ -107,7 +107,7 @@ impl PointLightSrc {
     }
 
     pub fn texture(&self) -> &Rc<Texture> {
-        &self.texture
+        &self.depth
     }
 
     pub fn position(&self) -> Vector3 {
@@ -120,14 +120,14 @@ impl PointLightSrc {
             Gl::FRAMEBUFFER,
             Gl::DEPTH_ATTACHMENT,
             Gl::TEXTURE_2D,
-            Some(&self.depth),
+            Some(self.depth.location()),
             0,
         );
         gl.framebuffer_texture_2d(
             Gl::FRAMEBUFFER,
             Gl::COLOR_ATTACHMENT0,
             Gl::TEXTURE_2D,
-            Some(self.texture().location()),
+            Some(&self.texture),
             0,
         );
         gl.viewport(0, 0, self.w as i32, self.h as i32);

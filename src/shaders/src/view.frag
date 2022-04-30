@@ -18,6 +18,9 @@ struct Light {
 
 uniform Light[MAX_LIGHTS] lights;
 
+uniform vec3 pointLightPosition;
+uniform sampler2D pointLightmap;
+
 in vec2 textCoord;
 in vec4 fragNormal;
 in vec4 fragPosition;
@@ -27,7 +30,6 @@ out vec4 color;
 uniform sampler2D image;
 
 uniform int isDepth;
-
 
 uniform vec3 cameraPosition;
 
@@ -70,9 +72,51 @@ float calculateProjectorLight(Light light, vec3 normal) {
     return intensity * calculatePhong(light, toLightVec, normal);
 }
 
+float angleFromVec(float x, float y) {
+    vec2 n = normalize(vec2(x, y));
+    float cosA = n.x;
+    float sinA = n.y;
+    if (sinA > 0.0) {
+        return acos(cosA);
+    } else {
+        if (cosA > 0.0) {
+            return -acos(cosA);
+        } else {
+            return 2.0 * PI - acos(cosA);
+        }
+    }
+}
+
+float calculatePointLight(vec3 normal) {
+    vec3 fragInLight = fragPosition.xyz - pointLightPosition;
+
+    float flip = sign(fragInLight.z);
+
+    float x = 2.0 * angleFromVec(fragInLight.x, flip * fragInLight.z) / PI - 1.0;
+    float y = 2.0 * angleFromVec(fragInLight.y, flip * fragInLight.z) / PI - 1.0;
+    float near = 1.0;
+    float far = 20.0;
+    float z = 2.0 * (length(fragInLight) - near) / (far - near) - 1.0;
+
+    if (z > 1.0 || z < -1.0) { return 0.0; }
+
+    float lightZ;
+    if (flip < 0.0) {
+        lightZ = texture(pointLightmap, vec2(x, y * 0.5)).r;
+    } else {
+        lightZ = texture(pointLightmap, vec2(x, 0.5 + y / 0.5)).r;
+    }
+
+    if (z * 0.5 + 0.5 - lightZ >= 0.01) {
+        return 1.0;
+    }
+
+    return 0.0;
+}
+
 void main() {
     if (isDepth != 0) {
-        color = vec4(texture(image, textCoord).rgb, 1.0);
+        color = vec4(texture(image, textCoord).rrr, 1.0);
         return;
     }
 
@@ -85,6 +129,7 @@ void main() {
         }
         brightness += calculateProjectorLight(lights[i], normal);
     }
-    
+    brightness += calculatePointLight(normal);
+
     color = vec4(texture(image, textCoord).rgb * brightness, 1.0);
 }

@@ -3,6 +3,7 @@ use web_sys::{HtmlCanvasElement, WebGl2RenderingContext as Gl};
 
 use crate::camera::Camera;
 use crate::light_src::LightSrc;
+use crate::point_light_src::PointLightSrc;
 use crate::shaders::render_light::RenderLight;
 use crate::shaders::render_point_light::RenderPointLight;
 use crate::shaders::wire_light::WireLight;
@@ -40,8 +41,8 @@ impl GlContext {
         }
     }
 
-    pub fn view(&self, obj: &Object, camera: &Camera, light: &[LightSrc]) {
-        self.view.draw(&self.gl, obj, camera, light);
+    pub fn view(&self, obj: &Object, camera: &Camera, light: &[LightSrc], pl: &PointLightSrc) {
+        self.view.draw(&self.gl, obj, camera, light, pl);
     }
 
     pub fn wire_light(&self, light: &LightSrc, proj: Matrix) {

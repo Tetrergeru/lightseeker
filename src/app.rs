@@ -271,7 +271,7 @@ impl App {
             self.context
                 .as_ref()
                 .unwrap()
-                .view(obj, &self.camera, &self.lights);
+                .view(obj, &self.camera, &self.lights, &self.point_lights[0]);
         }
     }
 

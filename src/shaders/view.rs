@@ -1,7 +1,15 @@
+use std::rc::Rc;
+
 use web_sys::{WebGl2RenderingContext as Gl, WebGlProgram, WebGlUniformLocation};
 
 use super::init_shader_program;
-use crate::{camera::Camera, light_src::LightSrc, objects::object::Object};
+use crate::{
+    camera::Camera,
+    light_src::LightSrc,
+    objects::{object::Object, texture::Texture},
+    point_light_src::PointLightSrc,
+    vector::Vector3,
+};
 
 pub struct ViewShader {
     program: WebGlProgram,
@@ -20,6 +28,8 @@ pub struct ViewShader {
     texture_location: WebGlUniformLocation,
     is_depth_location: WebGlUniformLocation,
     light: Vec<LightUniform>,
+    point_light_pos: WebGlUniformLocation,
+    point_light_map: WebGlUniformLocation,
 }
 
 const FS_SOURCE: &str = include_str!("src/view.frag");
@@ -45,8 +55,12 @@ impl ViewShader {
             light.push(LightUniform::new(gl, &program, &format!("lights[{}]", i)));
         }
 
+        let point_light_pos = gl
+            .get_uniform_location(&program, "pointLightPosition")
+            .unwrap();
+        let point_light_map = gl.get_uniform_location(&program, "pointLightmap").unwrap();
+
         Self {
-            light,
             program,
             width,
             height,
@@ -61,6 +75,10 @@ impl ViewShader {
             normal_mat_location,
             texture_location,
             is_depth_location,
+
+            light,
+            point_light_pos,
+            point_light_map,
         }
     }
 
@@ -69,7 +87,14 @@ impl ViewShader {
         self.height = h;
     }
 
-    pub fn draw(&self, gl: &Gl, obj: &Object, camera: &Camera, light: &[LightSrc]) {
+    pub fn draw(
+        &self,
+        gl: &Gl,
+        obj: &Object,
+        camera: &Camera,
+        light: &[LightSrc],
+        pl: &PointLightSrc,
+    ) {
         gl.use_program(Some(&self.program));
 
         gl.viewport(0, 0, self.width, self.height);
@@ -127,12 +152,27 @@ impl ViewShader {
         );
 
         if !obj.ignored_by_light {
+            let mut texture_id = Gl::TEXTURE1;
+
             for (i, light) in light.iter().enumerate() {
-                self.light[i].bind(gl, light, Gl::TEXTURE1 + i as u32);
+                self.light[i].bind(gl, light, texture_id as u32);
+                log::debug!("View self.light[i].bind({})", texture_id- Gl::TEXTURE0);
+                texture_id += 1;
             }
             if light.len() < self.light.len() {
                 self.light[light.len()].bind_noting(gl);
             }
+
+            gl.active_texture(texture_id);
+            gl.bind_texture(Gl::TEXTURE_2D, Some(obj.texture.location()));
+            gl.uniform1i(
+                Some(&self.point_light_map),
+                (texture_id - Gl::TEXTURE0) as i32,
+            );
+            log::debug!("View point_light_map.bind({})", texture_id- Gl::TEXTURE0);
+
+            gl.uniform3fv_with_f32_array(Some(&self.point_light_pos), &pl.position());
+            // texture_id += 1;
         }
 
         gl.active_texture(Gl::TEXTURE0);
