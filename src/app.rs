@@ -89,28 +89,52 @@ impl Component for App {
                     "KeyD" => self.camera.move_h(Vector2::from_xy(-0.2, 0.0)),
                     "ArrowDown" => {
                         self.point_lights[0].translate(-0.2, 0.0, 0.0);
-                        self.objects.last_mut().unwrap().transform.translate(-0.2, 0.0, 0.0)
-                    },
+                        self.objects
+                            .last_mut()
+                            .unwrap()
+                            .transform
+                            .translate(-0.2, 0.0, 0.0)
+                    }
                     "ArrowUp" => {
                         self.point_lights[0].translate(0.2, 0.0, 0.0);
-                        self.objects.last_mut().unwrap().transform.translate(0.2, 0.0, 0.0)
-                    },
+                        self.objects
+                            .last_mut()
+                            .unwrap()
+                            .transform
+                            .translate(0.2, 0.0, 0.0)
+                    }
                     "ArrowLeft" => {
                         self.point_lights[0].translate(0.0, 0.0, 0.2);
-                        self.objects.last_mut().unwrap().transform.translate(0.0, 0.0, 0.2)
-                    },
+                        self.objects
+                            .last_mut()
+                            .unwrap()
+                            .transform
+                            .translate(0.0, 0.0, 0.2)
+                    }
                     "ArrowRight" => {
                         self.point_lights[0].translate(0.0, 0.0, -0.2);
-                        self.objects.last_mut().unwrap().transform.translate(0.0, 0.0, -0.2)
-                    },
+                        self.objects
+                            .last_mut()
+                            .unwrap()
+                            .transform
+                            .translate(0.0, 0.0, -0.2)
+                    }
                     "Digit1" => {
                         self.point_lights[0].translate(0.0, 0.2, 0.0);
-                        self.objects.last_mut().unwrap().transform.translate(0.0, 0.2, 0.0)
-                    },
+                        self.objects
+                            .last_mut()
+                            .unwrap()
+                            .transform
+                            .translate(0.0, 0.2, 0.0)
+                    }
                     "Digit2" => {
                         self.point_lights[0].translate(0.0, -0.2, 0.0);
-                        self.objects.last_mut().unwrap().transform.translate(0.0, -0.2, 0.0)
-                    },
+                        self.objects
+                            .last_mut()
+                            .unwrap()
+                            .transform
+                            .translate(0.0, -0.2, 0.0)
+                    }
                     _ => (),
                 }
                 self.draw();
@@ -239,7 +263,7 @@ impl App {
             self.context
                 .as_ref()
                 .unwrap()
-                .wire_light(light, self.camera.matrix());
+                .wire_light(light.matrix(), self.camera.matrix());
 
             light.bind(&gl);
             gl.clear(Gl::COLOR_BUFFER_BIT | Gl::DEPTH_BUFFER_BIT);
@@ -253,25 +277,38 @@ impl App {
         }
 
         for light in self.point_lights.iter() {
+            // for m in light.matrices() {
+            //     self.context
+            //         .as_ref()
+            //         .unwrap()
+            //         .wire_light(m, self.camera.matrix());
+            // }
+
             light.bind(&gl);
             gl.clear(Gl::COLOR_BUFFER_BIT | Gl::DEPTH_BUFFER_BIT);
             for obj in self.objects.iter_mut() {
                 if obj.ignored_by_light {
                     continue;
                 }
-                for flip in [-1.0, 1.0] {
-                    light.viewport(&gl, flip);
-                    self.context.as_ref().unwrap().render_point_light(obj, light.position, flip);
+                for direction in 0..4 {
+                    light.viewport(&gl, direction);
+                    self.context.as_ref().unwrap().render_point_light(
+                        obj,
+                        light.position,
+                        direction,
+                    );
                 }
             }
             gl.bind_framebuffer(Gl::FRAMEBUFFER, None);
         }
 
         for obj in self.objects.iter_mut() {
-            self.context
-                .as_ref()
-                .unwrap()
-                .view(obj, &self.camera, &self.lights, &self.point_lights[0]);
+            self.context.as_ref().unwrap().view(
+                obj,
+                &self.camera,
+                &self.lights,
+                &self.point_lights[0],
+            );
         }
     }
 
@@ -313,45 +350,81 @@ impl App {
                 t
             },
         ));
+        self.objects.push(Object::new(
+            self.shapes["Floor"].clone(),
+            self.textures["Carpet"].clone(),
+            {
+                let mut t = Transform::from_xyz(0.0, -2.0, -10.0);
+                t.scale(5.0);
+                t
+            },
+        ));
+        self.objects.push(Object::new(
+            self.shapes["Floor"].clone(),
+            self.textures["Carpet"].clone(),
+            {
+                let mut t = Transform::from_xyz(0.0, 4.0, 0.0);
+                t.scale(5.0);
+                t.rotate_v(std::f32::consts::PI);
+                t
+            },
+        ));
+        self.objects.push(Object::new(
+            self.shapes["Floor"].clone(),
+            self.textures["Carpet"].clone(),
+            {
+                let mut t = Transform::from_xyz(0.0, 4.0, -10.0);
+                t.scale(5.0);
+                t.rotate_v(std::f32::consts::PI);
+                t
+            },
+        ));
+        self.objects.push(Object::new(
+            self.shapes["Cube"].clone(),
+            self.textures["Grass"].clone(),
+            Transform::from_xyz(0.0, -1.0, -5.0),
+        ));
 
         let light = LightSrc::new(
             &self.gl(),
-            Vector3::from_xyz(0.0, 3.0, -5.0),
+            Vector3::from_xyz(0.0, 0.0, -5.0),
             std::f32::consts::PI * 1.0,
+            -0.6,
+        );
+        self.lights.push(light);
+
+        let light = LightSrc::new(
+            &self.gl(),
+            Vector3::from_xyz(0.0, 3.0, 5.0),
+            std::f32::consts::PI * 0.0,
             0.6,
         );
         self.lights.push(light);
 
-        // let light = LightSrc::new(
-        //     &self.gl(),
-        //     Vector3::from_xyz(0.0, 3.0, 5.0),
-        //     std::f32::consts::PI * 0.0,
-        //     0.6,
-        // );
-        // self.lights.push(light);
+        let light = PointLightSrc::new(&self.gl(), Vector3::from_xyz(0.0, 0.0, 0.0));
 
-        let light = PointLightSrc::new(&self.gl(), Vector3::from_xyz(0.0, 3.0, 5.0));
-
-        self.objects.push(Object::new(
-            self.shapes["Floor"].clone(),
-            light.texture().clone(),
-            {
+        self.objects.push(
+            Object::new(self.shapes["Floor"].clone(), light.texture().clone(), {
                 let mut t = Transform::from_xyz(7.0, 0.0, 7.0);
                 t.rotate_v(1.5);
                 t
-            },
-        ).ignored_by_light());
+            })
+            .ignored_by_light(),
+        );
 
-        self.objects.push(Object::new(
-            self.shapes["Cube"].clone(),
-            self.textures["Grass"].clone(),
-            {
-                let mut t = Transform::from_xyz(0.0, 3.0, 5.0);
-                t.scale(0.1);
-                t
-            },
-        ).ignored_by_light());
-        
+        self.objects.push(
+            Object::new(
+                self.shapes["Cube"].clone(),
+                self.textures["Grass"].clone(),
+                {
+                    let mut t = Transform::from_xyz(0.0, 0.0, 0.0);
+                    t.scale(0.1);
+                    t
+                },
+            )
+            .ignored_by_light(),
+        );
+
         self.point_lights.push(light);
     }
 }

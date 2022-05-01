@@ -1,14 +1,11 @@
-use std::rc::Rc;
-
 use web_sys::{WebGl2RenderingContext as Gl, WebGlProgram, WebGlUniformLocation};
 
 use super::init_shader_program;
 use crate::{
     camera::Camera,
     light_src::LightSrc,
-    objects::{object::Object, texture::Texture},
+    objects::{object::Object},
     point_light_src::PointLightSrc,
-    vector::Vector3,
 };
 
 pub struct ViewShader {
@@ -164,12 +161,11 @@ impl ViewShader {
             }
 
             gl.active_texture(texture_id);
-            gl.bind_texture(Gl::TEXTURE_2D, Some(obj.texture.location()));
+            gl.bind_texture(Gl::TEXTURE_2D, Some(pl.depth().location()));
             gl.uniform1i(
                 Some(&self.point_light_map),
                 (texture_id - Gl::TEXTURE0) as i32,
             );
-            log::debug!("View point_light_map.bind({})", texture_id- Gl::TEXTURE0);
 
             gl.uniform3fv_with_f32_array(Some(&self.point_light_pos), &pl.position());
             // texture_id += 1;
@@ -227,7 +223,7 @@ impl LightUniform {
         gl.uniform1f(Some(&self.fov), light.fov);
 
         gl.active_texture(texture);
-        gl.bind_texture(Gl::TEXTURE_2D, Some(light.texture().location()));
+        gl.bind_texture(Gl::TEXTURE_2D, Some(light.depth().location()));
         gl.uniform1i(Some(&self.map), (texture - Gl::TEXTURE0) as i32);
     }
 }

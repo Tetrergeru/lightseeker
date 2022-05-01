@@ -45,16 +45,16 @@ impl GlContext {
         self.view.draw(&self.gl, obj, camera, light, pl);
     }
 
-    pub fn wire_light(&self, light: &LightSrc, proj: Matrix) {
-        self.wire_light.draw(&self.gl, proj, light.matrix())
+    pub fn wire_light(&self, light: Matrix, proj: Matrix) {
+        self.wire_light.draw(&self.gl, proj, light)
     }
 
     pub fn render_light(&self, obj: &Object, light: &LightSrc) {
         self.render_light.draw(&self.gl, obj, light)
     }
 
-    pub fn render_point_light(&self, obj: &Object, light: Vector3, flip: f32) {
-        self.render_point_light.draw(&self.gl, obj, light, flip)
+    pub fn render_point_light(&self, obj: &Object, light: Vector3, direction: i32) {
+        self.render_point_light.draw(&self.gl, obj, light, direction)
     }
 
     pub fn gl(&self) -> Gl {

@@ -35,8 +35,8 @@ impl LightSrc {
             framebuffer,
             texture: Rc::new(Texture::from_texture(texture)),
             fov: std::f32::consts::PI / 4.0,
-            diffuse: 1.0,
-            specular: 1.0,
+            diffuse: 2.0,
+            specular: 2.0,
             w,
             h,
         };
@@ -107,7 +107,7 @@ impl LightSrc {
         &self.framebuffer
     }
 
-    pub fn texture(&self) -> &Rc<Texture> {
+    pub fn depth(&self) -> &Rc<Texture> {
         &self.texture
     }
 
@@ -128,7 +128,7 @@ impl LightSrc {
             Gl::FRAMEBUFFER,
             Gl::DEPTH_ATTACHMENT,
             Gl::TEXTURE_2D,
-            Some(self.texture().location()),
+            Some(self.depth().location()),
             0,
         );
         gl.viewport(0, 0, self.w as i32, self.h as i32);

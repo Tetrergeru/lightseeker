@@ -15,7 +15,7 @@ pub struct RenderPointLight {
     projection_location: WebGlUniformLocation,
     near_location: WebGlUniformLocation,
     far_location: WebGlUniformLocation,
-    flip_location: WebGlUniformLocation,
+    direction_location: WebGlUniformLocation,
     texture_location: WebGlUniformLocation,
 }
 
@@ -32,7 +32,7 @@ impl RenderPointLight {
         let projection_location = gl.get_uniform_location(&program, "projection").unwrap();
         let near_location = gl.get_uniform_location(&program, "near").unwrap();
         let far_location = gl.get_uniform_location(&program, "far").unwrap();
-        let flip_location = gl.get_uniform_location(&program, "flip").unwrap();
+        let direction_location = gl.get_uniform_location(&program, "direction").unwrap();
         let texture_location = gl.get_uniform_location(&program, "image").unwrap();
 
         Self {
@@ -46,7 +46,7 @@ impl RenderPointLight {
             projection_location,
             near_location,
             far_location,
-            flip_location,
+            direction_location,
             texture_location,
         }
     }
@@ -56,7 +56,7 @@ impl RenderPointLight {
         self.height = h;
     }
 
-    pub fn draw(&self, gl: &Gl, obj: &Object, light: Vector3, flip: f32) {
+    pub fn draw(&self, gl: &Gl, obj: &Object, light: Vector3, direction: i32) {
         gl.use_program(Some(&self.program));
 
         gl.bind_buffer(Gl::ARRAY_BUFFER, Some(&obj.shape.get_buffer()));
@@ -87,8 +87,8 @@ impl RenderPointLight {
             &(Matrix::translate(light * -1.0) * obj.transform_matrix()),
         );
         gl.uniform1f(Some(&self.far_location), 20.0);
-        gl.uniform1f(Some(&self.near_location), 1.0);
-        gl.uniform1f(Some(&self.flip_location), flip);
+        gl.uniform1f(Some(&self.near_location), 6.0_f32.sqrt() / 12.0);
+        gl.uniform1i(Some(&self.direction_location), direction);
 
         gl.bind_texture(Gl::TEXTURE_2D, Some(obj.texture.location()));
         uniform_texture(gl, &self.texture_location, obj.texture.location());

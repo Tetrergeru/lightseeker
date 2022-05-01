@@ -13,7 +13,7 @@ pub struct PointLightSrc {
     h: u32,
     matrix: Matrix,
     framebuffer: WebGlFramebuffer,
-    texture: WebGlTexture,
+    texture: Rc<Texture>,
     depth: Rc<Texture>,
 }
 
@@ -30,7 +30,7 @@ impl PointLightSrc {
             position: point,
             matrix: Matrix::zero(),
             framebuffer,
-            texture,
+            texture: Rc::new(Texture::from_texture(texture)),
             diffuse: 1.0,
             specular: 1.0,
             w,
@@ -106,8 +106,12 @@ impl PointLightSrc {
         &self.framebuffer
     }
 
-    pub fn texture(&self) -> &Rc<Texture> {
+    pub fn depth(&self) -> &Rc<Texture> {
         &self.depth
+    }
+
+    pub fn texture(&self) -> &Rc<Texture> {
+        &self.texture
     }
 
     pub fn position(&self) -> Vector3 {
@@ -127,17 +131,70 @@ impl PointLightSrc {
             Gl::FRAMEBUFFER,
             Gl::COLOR_ATTACHMENT0,
             Gl::TEXTURE_2D,
-            Some(&self.texture),
+            Some(self.texture.location()),
             0,
         );
         gl.viewport(0, 0, self.w as i32, self.h as i32);
     }
 
-    pub fn viewport(&self, gl: &Gl, flip: f32) {
-        if flip > 0.0 {
-            gl.viewport(0, 0, self.w as i32, self.h as i32 / 2);
-        } else {
-            gl.viewport(0, self.h as i32 / 2, self.w as i32, self.h as i32 / 2);
+    pub fn viewport(&self, gl: &Gl, direction: i32) {
+        let h = self.h as i32 / 2;
+        let w = self.w as i32 / 2;
+        match direction {
+            0 => gl.viewport(0, 0, w, h),
+            1 => gl.viewport(w, 0, w, h),
+            2 => gl.viewport(0, h, w, h),
+            3 => gl.viewport(w, h, w, h),
+            _ => panic!("Direction should be in 0..4"),
         }
+    }
+
+    fn fov() -> f32 {
+        2.0 * 6.0_f32.sqrt().atan()
+    }
+
+    fn aspect() -> f32 {
+        2.0 / 3.0_f32.sqrt()
+    }
+
+    fn v_angle_0() -> f32 {
+        std::f32::consts::PI / 2.0 + Self::fov() * 3.0 / 2.0
+    }
+
+    fn v_angle_123() -> f32 {
+        std::f32::consts::PI / 2.0 + Self::fov() / 2.0
+    }
+
+    fn perspective() -> Matrix {
+        // float f = tan(PI * 0.5 - 0.5 * fov());
+        // float range_inv = 1.0 / (near - far);
+        // return mat4(
+        //     f / aspect(), 0.0, 0.0, 0.0,
+        //     0.0, f, 0.0, 0.0,
+        //     0.0, 0.0, (near + far) * range_inv, -1.0,
+        //     0.0, 0.0, near * far * range_inv * 2.0, 0.0
+        // );
+        let near = 1.0;//6.0_f32.sqrt() / 12.0;
+        Matrix::perspective(Self::fov(), Self::aspect(), near, 20.0)
+    }
+
+    pub fn matrices(&self) -> Vec<Matrix> {
+        use std::f32::consts::PI;
+        let h_angles = [0.0, PI / 3.0, PI, -PI / 3.0];
+        let v_angles = [
+            Self::v_angle_0(),
+            Self::v_angle_123(),
+            Self::v_angle_123(),
+            Self::v_angle_123(),
+        ];
+
+        let matrix = |i| {
+            Self::perspective()
+                * Matrix::rotation_x(v_angles[i])
+                * Matrix::rotation_y(h_angles[i])
+                * Matrix::translate(self.position * -1.0)
+        };
+
+        vec![matrix(0), matrix(1), matrix(2), matrix(3)]
     }
 }
