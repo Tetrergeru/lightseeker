@@ -9,12 +9,10 @@ use yew::{html, Component, Context, Html, NodeRef};
 use crate::{
     camera::Camera,
     download::{download_image, download_text},
+    geometry::{Transform, Vector2, Vector3},
     gl_context::GlContext,
-    light_src::LightSrc,
+    light::Light,
     objects::{object::Object, shape::Shape, texture::Texture},
-    point_light_src::PointLightSrc,
-    transform::Transform,
-    vector::{Vector2, Vector3},
 };
 
 pub struct App {
@@ -27,8 +25,7 @@ pub struct App {
     currently_downloading: usize,
 
     camera: Camera,
-    lights: Vec<LightSrc>,
-    point_lights: Vec<PointLightSrc>,
+    lights: Vec<Light>,
     mouse_down: bool,
     size: Vector2,
 
@@ -71,7 +68,6 @@ impl Component for App {
             mouse_down: false,
             size,
             lights: vec![],
-            point_lights: vec![],
 
             context: None,
             _keydown_listener: keydown_listener,
@@ -87,54 +83,12 @@ impl Component for App {
                     "KeyS" => self.camera.move_h(Vector2::from_xy(0.0, -0.2)),
                     "KeyA" => self.camera.move_h(Vector2::from_xy(0.2, 0.0)),
                     "KeyD" => self.camera.move_h(Vector2::from_xy(-0.2, 0.0)),
-                    "ArrowDown" => {
-                        self.point_lights[0].translate(-0.2, 0.0, 0.0);
-                        self.objects
-                            .last_mut()
-                            .unwrap()
-                            .transform
-                            .translate(-0.2, 0.0, 0.0)
-                    }
-                    "ArrowUp" => {
-                        self.point_lights[0].translate(0.2, 0.0, 0.0);
-                        self.objects
-                            .last_mut()
-                            .unwrap()
-                            .transform
-                            .translate(0.2, 0.0, 0.0)
-                    }
-                    "ArrowLeft" => {
-                        self.point_lights[0].translate(0.0, 0.0, 0.2);
-                        self.objects
-                            .last_mut()
-                            .unwrap()
-                            .transform
-                            .translate(0.0, 0.0, 0.2)
-                    }
-                    "ArrowRight" => {
-                        self.point_lights[0].translate(0.0, 0.0, -0.2);
-                        self.objects
-                            .last_mut()
-                            .unwrap()
-                            .transform
-                            .translate(0.0, 0.0, -0.2)
-                    }
-                    "Digit1" => {
-                        self.point_lights[0].translate(0.0, 0.2, 0.0);
-                        self.objects
-                            .last_mut()
-                            .unwrap()
-                            .transform
-                            .translate(0.0, 0.2, 0.0)
-                    }
-                    "Digit2" => {
-                        self.point_lights[0].translate(0.0, -0.2, 0.0);
-                        self.objects
-                            .last_mut()
-                            .unwrap()
-                            .transform
-                            .translate(0.0, -0.2, 0.0)
-                    }
+                    "ArrowDown" => self.move_point_light(Vector3::from_xyz(-0.2, 0.0, 0.0)),
+                    "ArrowUp" => self.move_point_light(Vector3::from_xyz(0.2, 0.0, 0.0)),
+                    "ArrowLeft" => self.move_point_light(Vector3::from_xyz(0.0, 0.0, 0.2)),
+                    "ArrowRight" => self.move_point_light(Vector3::from_xyz(0.0, 0.0, -0.2)),
+                    "Digit1" => self.move_point_light(Vector3::from_xyz(0.0, 0.2, 0.0)),
+                    "Digit2" => self.move_point_light(Vector3::from_xyz(0.0, -0.2, 0.0)),
                     _ => (),
                 }
                 self.draw();
@@ -229,6 +183,12 @@ impl Component for App {
 }
 
 impl App {
+    fn move_point_light(&mut self, d: Vector3) {
+        if let Light::Point(p) = self.lights.last_mut().unwrap() {
+            p.transform.translate(d.x(), d.y(), d.z());
+        }
+    }
+
     fn required_shapes() -> Vec<(String, String)> {
         [
             ("resources/skull.obj", "Skull"),
@@ -257,58 +217,32 @@ impl App {
 
     fn draw(&mut self) {
         let gl = self.gl();
+        let context = self.context.as_ref().unwrap();
         gl.clear(Gl::COLOR_BUFFER_BIT | Gl::DEPTH_BUFFER_BIT);
 
         for light in self.lights.iter() {
+            if let Light::Directional(d) = light {
+                context.wire_light(d.matrix(), self.camera.matrix());
+            } else if let Light::Point(p) = light {
+                for m in p.matrices_with_nf(0.3, 0.31) {
+                    context.wire_light(m, self.camera.matrix());
+                }
+            }
+            context.bind_framebuffer(light);
+            context.clear();
+            for obj in self.objects.iter_mut() {
+                if obj.ignored_by_light {
+                    continue;
+                }
+                context.render_light(obj, light);
+            }
+            context.unbind_framebuffer();
+        }
+        for obj in self.objects.iter_mut() {
             self.context
                 .as_ref()
                 .unwrap()
-                .wire_light(light.matrix(), self.camera.matrix());
-
-            light.bind(&gl);
-            gl.clear(Gl::COLOR_BUFFER_BIT | Gl::DEPTH_BUFFER_BIT);
-            for obj in self.objects.iter_mut() {
-                if obj.ignored_by_light {
-                    continue;
-                }
-                self.context.as_ref().unwrap().render_light(obj, light);
-            }
-            gl.bind_framebuffer(Gl::FRAMEBUFFER, None);
-        }
-
-        for light in self.point_lights.iter() {
-            // for m in light.matrices() {
-            //     self.context
-            //         .as_ref()
-            //         .unwrap()
-            //         .wire_light(m, self.camera.matrix());
-            // }
-
-            light.bind(&gl);
-            gl.clear(Gl::COLOR_BUFFER_BIT | Gl::DEPTH_BUFFER_BIT);
-            for obj in self.objects.iter_mut() {
-                if obj.ignored_by_light {
-                    continue;
-                }
-                for direction in 0..4 {
-                    light.viewport(&gl, direction);
-                    self.context.as_ref().unwrap().render_point_light(
-                        obj,
-                        light.position,
-                        direction,
-                    );
-                }
-            }
-            gl.bind_framebuffer(Gl::FRAMEBUFFER, None);
-        }
-
-        for obj in self.objects.iter_mut() {
-            self.context.as_ref().unwrap().view(
-                obj,
-                &self.camera,
-                &self.lights,
-                &self.point_lights[0],
-            );
+                .view(obj, &self.camera, &self.lights);
         }
     }
 
@@ -385,46 +319,19 @@ impl App {
             Transform::from_xyz(0.0, -1.0, -5.0),
         ));
 
-        let light = LightSrc::new(
+        let light = Light::new_directional(
             &self.gl(),
-            Vector3::from_xyz(0.0, 0.0, -5.0),
-            std::f32::consts::PI * 1.0,
-            -0.6,
+            Transform::from_xyz_hv(0.0, 0.0, -5.0, std::f32::consts::PI * 1.0, -0.6),
         );
         self.lights.push(light);
 
-        let light = LightSrc::new(
+        let light = Light::new_directional(
             &self.gl(),
-            Vector3::from_xyz(0.0, 3.0, 5.0),
-            std::f32::consts::PI * 0.0,
-            0.6,
+            Transform::from_xyz_hv(0.0, 3.0, 5.0, std::f32::consts::PI * 0.0, 0.6),
         );
         self.lights.push(light);
 
-        let light = PointLightSrc::new(&self.gl(), Vector3::from_xyz(0.0, 0.0, 0.0));
-
-        self.objects.push(
-            Object::new(self.shapes["Floor"].clone(), light.texture().clone(), {
-                let mut t = Transform::from_xyz(7.0, 0.0, 7.0);
-                t.rotate_v(1.5);
-                t
-            })
-            .ignored_by_light(),
-        );
-
-        self.objects.push(
-            Object::new(
-                self.shapes["Cube"].clone(),
-                self.textures["Grass"].clone(),
-                {
-                    let mut t = Transform::from_xyz(0.0, 0.0, 0.0);
-                    t.scale(0.1);
-                    t
-                },
-            )
-            .ignored_by_light(),
-        );
-
-        self.point_lights.push(light);
+        let light = Light::new_point(&self.gl(), Transform::from_xyz(0.0, 1.0, -2.0));
+        self.lights.push(light);
     }
 }

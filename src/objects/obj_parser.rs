@@ -1,4 +1,4 @@
-use crate::vector::{Vector2, Vector3};
+use crate::geometry::{Vector2, Vector3};
 
 use super::vertex_data::VertexData;
 

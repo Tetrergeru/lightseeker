@@ -1,9 +1,9 @@
 use web_sys::{WebGl2RenderingContext, WebGlBuffer};
 
 use crate::{
+    geometry::{Vector2, Vector3},
     objects::obj_parser::ObjParser,
     shaders::make_f32_buffer,
-    vector::{Vector2, Vector3},
 };
 
 use super::vertex_data::VertexData;

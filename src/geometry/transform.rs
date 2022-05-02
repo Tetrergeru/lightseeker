@@ -1,25 +1,20 @@
-use crate::{matrix::Matrix, vector::Vector3};
+use crate::geometry::{Matrix, Vector3};
 
 pub struct Transform {
-    pub position: Vector3,
-    pub scale: Vector3,
-    pub angle_h: f32,
-    pub angle_v: f32,
-
-    matrix: Matrix,
+    position: Vector3,
+    scale: Vector3,
+    angle_h: f32,
+    angle_v: f32,
 }
 
 impl Transform {
     pub fn new() -> Self {
-        let mut transform = Self {
+        Self {
             position: Vector3::zero(),
             angle_h: 0.0,
             angle_v: 0.0,
-            matrix: Matrix::zero(),
             scale: Vector3::repeat(1.0),
-        };
-        transform.eval_matrix();
-        transform
+        }
     }
 
     pub fn from_xyz_hv(x: f32, y: f32, z: f32, h: f32, v: f32) -> Self {
@@ -36,40 +31,47 @@ impl Transform {
         t
     }
 
-    fn eval_matrix(&mut self) {
-        self.matrix = Matrix::ident()
-            * Matrix::translate(self.position)
+    pub fn matrix(&self) -> Matrix {
+        Matrix::translate(self.position)
             * Matrix::rotation_x(self.angle_v)
             * Matrix::rotation_y(self.angle_h)
             * Matrix::scale(self.scale.x())
     }
 
-    pub fn matrix(&self) -> Matrix {
-        self.matrix
+    pub fn reverse_matrix(&self) -> Matrix {
+        // Matrix::scale(-self.scale.x())
+        Matrix::rotation_x(-self.angle_v)
+            * Matrix::rotation_y(-self.angle_h)
+            * Matrix::translate(self.position * -1.0)
     }
 
     pub fn normal_matrix(&self) -> Matrix {
-        Matrix::ident() * Matrix::rotation_y(-self.angle_h) * Matrix::rotation_x(-self.angle_v)
+        Matrix::rotation_x(-self.angle_v) * Matrix::rotation_y(-self.angle_h)
+    }
+
+    pub fn direction(&self) -> Vector3 {
+        Matrix::rotation_y(self.angle_h)
+            * (Matrix::rotation_x(self.angle_v) * Vector3::from_xyz(0.0, 0.0, -1.0))
+    }
+
+    pub fn position(&self) -> Vector3 {
+        self.position
     }
 
     pub fn translate(&mut self, dx: f32, dy: f32, dz: f32) {
         self.position += Vector3::from_xyz(dx, dy, dz);
-        self.eval_matrix();
     }
 
     pub fn rotate_h(&mut self, dh: f32) {
         self.angle_h += dh;
-        self.eval_matrix();
     }
 
     pub fn rotate_v(&mut self, dv: f32) {
         self.angle_v += dv;
-        self.eval_matrix();
     }
 
     pub fn scale(&mut self, scale_factor: f32) {
         self.scale *= scale_factor;
-        self.eval_matrix();
     }
 }
 

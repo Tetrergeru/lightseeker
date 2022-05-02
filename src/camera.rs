@@ -1,6 +1,6 @@
 use crate::{
-    matrix::Matrix,
-    vector::{Vector2, Vector3, Vector4},
+    geometry::Matrix,
+    geometry::{Vector2, Vector3},
 };
 
 pub struct Camera {
@@ -40,7 +40,7 @@ impl Camera {
     }
 
     pub fn move_h(&mut self, vec: Vector2) {
-        let delta = Matrix::rotation_y(-self.angle_h) * Vector4::from_xyz(vec.x, 0.0, vec.y);
+        let delta = Matrix::rotation_y(-self.angle_h) * Vector3::from_xyz(vec.x, 0.0, vec.y);
         for i in 0..3 {
             self.position.set(i, self.position.get(i) + delta.get(i))
         }

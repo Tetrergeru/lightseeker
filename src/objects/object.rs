@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::{matrix::Matrix, transform::Transform};
+use crate::geometry::{Matrix, Transform};
 
 use super::{shape::Shape, texture::Texture};
 

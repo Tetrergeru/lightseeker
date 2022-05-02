@@ -1,7 +1,7 @@
 use web_sys::{WebGl2RenderingContext as Gl, WebGlProgram, WebGlUniformLocation};
 
 use super::{init_shader_program, uniform_texture};
-use crate::{light_src::LightSrc, objects::object::Object};
+use crate::{objects::object::Object, light::Directional};
 
 pub struct RenderLight {
     program: WebGlProgram,
@@ -47,7 +47,7 @@ impl RenderLight {
         self.height = h;
     }
 
-    pub fn draw(&self, gl: &Gl, obj: &Object, light: &LightSrc) {
+    pub fn draw(&self, gl: &Gl, obj: &Object, light: &Directional) {
         gl.use_program(Some(&self.program));
 
         gl.bind_buffer(Gl::ARRAY_BUFFER, Some(&obj.shape.get_buffer()));

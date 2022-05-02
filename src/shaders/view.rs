@@ -3,9 +3,8 @@ use web_sys::{WebGl2RenderingContext as Gl, WebGlProgram, WebGlUniformLocation};
 use super::init_shader_program;
 use crate::{
     camera::Camera,
-    light_src::LightSrc,
-    objects::{object::Object},
-    point_light_src::PointLightSrc,
+    light::{Directional, Light, Point},
+    objects::object::Object,
 };
 
 pub struct ViewShader {
@@ -23,10 +22,8 @@ pub struct ViewShader {
     position_location: WebGlUniformLocation,
     normal_mat_location: WebGlUniformLocation,
     texture_location: WebGlUniformLocation,
-    is_depth_location: WebGlUniformLocation,
+    ignore_light_location: WebGlUniformLocation,
     light: Vec<LightUniform>,
-    point_light_pos: WebGlUniformLocation,
-    point_light_map: WebGlUniformLocation,
 }
 
 const FS_SOURCE: &str = include_str!("src/view.frag");
@@ -44,18 +41,13 @@ impl ViewShader {
         let camera_pos_location = gl.get_uniform_location(&program, "cameraPosition").unwrap();
         let position_location = gl.get_uniform_location(&program, "position").unwrap();
         let normal_mat_location = gl.get_uniform_location(&program, "normalMat").unwrap();
-        let texture_location = gl.get_uniform_location(&program, "image").unwrap();
-        let is_depth_location = gl.get_uniform_location(&program, "isDepth").unwrap();
+        let texture_location = gl.get_uniform_location(&program, "textureMap").unwrap();
+        let ignore_light_location = gl.get_uniform_location(&program, "ignoreLight").unwrap();
 
         let mut light = vec![];
         for i in 0..16 {
             light.push(LightUniform::new(gl, &program, &format!("lights[{}]", i)));
         }
-
-        let point_light_pos = gl
-            .get_uniform_location(&program, "pointLightPosition")
-            .unwrap();
-        let point_light_map = gl.get_uniform_location(&program, "pointLightmap").unwrap();
 
         Self {
             program,
@@ -71,11 +63,9 @@ impl ViewShader {
             position_location,
             normal_mat_location,
             texture_location,
-            is_depth_location,
+            ignore_light_location,
 
             light,
-            point_light_pos,
-            point_light_map,
         }
     }
 
@@ -84,14 +74,7 @@ impl ViewShader {
         self.height = h;
     }
 
-    pub fn draw(
-        &self,
-        gl: &Gl,
-        obj: &Object,
-        camera: &Camera,
-        light: &[LightSrc],
-        pl: &PointLightSrc,
-    ) {
+    pub fn draw(&self, gl: &Gl, obj: &Object, camera: &Camera, light: &[Light]) {
         gl.use_program(Some(&self.program));
 
         gl.viewport(0, 0, self.width, self.height);
@@ -143,32 +126,20 @@ impl ViewShader {
             &obj.normal_matrix(),
         );
 
-        gl.uniform1i(
-            Some(&self.is_depth_location),
-            if obj.ignored_by_light { 1 } else { 0 },
-        );
-
         if !obj.ignored_by_light {
-            let mut texture_id = Gl::TEXTURE1;
+            gl.uniform1i(Some(&self.ignore_light_location), 0);
 
+            let mut texture_id = Gl::TEXTURE1;
             for (i, light) in light.iter().enumerate() {
                 self.light[i].bind(gl, light, texture_id as u32);
-                log::debug!("View self.light[i].bind({})", texture_id- Gl::TEXTURE0);
+                log::debug!("View self.light[i].bind({})", texture_id - Gl::TEXTURE0);
                 texture_id += 1;
             }
             if light.len() < self.light.len() {
                 self.light[light.len()].bind_noting(gl);
             }
-
-            gl.active_texture(texture_id);
-            gl.bind_texture(Gl::TEXTURE_2D, Some(pl.depth().location()));
-            gl.uniform1i(
-                Some(&self.point_light_map),
-                (texture_id - Gl::TEXTURE0) as i32,
-            );
-
-            gl.uniform3fv_with_f32_array(Some(&self.point_light_pos), &pl.position());
-            // texture_id += 1;
+        } else {
+            gl.uniform1i(Some(&self.ignore_light_location), 1);
         }
 
         gl.active_texture(Gl::TEXTURE0);
@@ -184,13 +155,15 @@ impl ViewShader {
 }
 
 struct LightUniform {
+    typ: WebGlUniformLocation,
     diffuse: WebGlUniformLocation,
     specular: WebGlUniformLocation,
-    projection: WebGlUniformLocation,
+    projection: [WebGlUniformLocation; 4],
     map: WebGlUniformLocation,
     position: WebGlUniformLocation,
     direction: WebGlUniformLocation,
     fov: WebGlUniformLocation,
+    inner_fov: WebGlUniformLocation,
 }
 
 impl LightUniform {
@@ -200,30 +173,58 @@ impl LightUniform {
                 .unwrap()
         };
         Self {
+            typ: uniform("type"),
             diffuse: uniform("diffuse"),
             specular: uniform("specular"),
-            projection: uniform("projection"),
+            projection: [
+                uniform("projection[0]"),
+                uniform("projection[1]"),
+                uniform("projection[2]"),
+                uniform("projection[3]"),
+            ],
             map: uniform("map"),
             position: uniform("position"),
             direction: uniform("direction"),
             fov: uniform("fov"),
+            inner_fov: uniform("innerFov"),
         }
     }
 
     fn bind_noting(&self, gl: &Gl) {
-        gl.uniform1f(Some(&self.diffuse), -1.0);
+        gl.uniform1i(Some(&self.typ), -1);
     }
 
-    fn bind(&self, gl: &Gl, light: &LightSrc, texture: u32) {
-        gl.uniform_matrix4fv_with_f32_array(Some(&self.projection), true, &light.matrix());
-        gl.uniform3fv_with_f32_array(Some(&self.position), &light.position());
-        gl.uniform3fv_with_f32_array(Some(&self.direction), &light.direction());
-        gl.uniform1f(Some(&self.diffuse), light.diffuse);
-        gl.uniform1f(Some(&self.specular), light.specular);
-        gl.uniform1f(Some(&self.fov), light.fov);
+    fn bind(&self, gl: &Gl, light: &Light, texture: u32) {
+        gl.uniform1f(Some(&self.diffuse), light.diffuse());
+        gl.uniform1f(Some(&self.specular), light.specular());
 
         gl.active_texture(texture);
         gl.bind_texture(Gl::TEXTURE_2D, Some(light.depth().location()));
         gl.uniform1i(Some(&self.map), (texture - Gl::TEXTURE0) as i32);
+
+        match light {
+            Light::Directional(d) => self.bind_direction_specific(gl, d),
+            Light::Point(p) => self.bind_point_specific(gl, p),
+        }
+    }
+
+    fn bind_point_specific(&self, gl: &Gl, light: &Point) {
+        gl.uniform1i(Some(&self.typ), 1);
+
+        let light_matrices = light.matrices();
+        for (i, m) in light_matrices.iter().enumerate() {
+            gl.uniform_matrix4fv_with_f32_array(Some(&self.projection[i]), true, m);
+        }
+        gl.uniform3fv_with_f32_array(Some(&self.position), &light.position());
+    }
+
+    fn bind_direction_specific(&self, gl: &Gl, light: &Directional) {
+        gl.uniform1i(Some(&self.typ), 0);
+
+        gl.uniform_matrix4fv_with_f32_array(Some(&self.projection[0]), true, &light.matrix());
+        gl.uniform3fv_with_f32_array(Some(&self.position), &light.position());
+        gl.uniform3fv_with_f32_array(Some(&self.direction), &light.direction());
+        gl.uniform1f(Some(&self.fov), light.fov);
+        gl.uniform1f(Some(&self.inner_fov), light.inner_fov);
     }
 }

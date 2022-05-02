@@ -1,6 +1,6 @@
 use std::ops::{Deref, Mul};
 
-use crate::vector::{Vector3, Vector4};
+use super::vector::{Vector3, Vector4};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Matrix {
