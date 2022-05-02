@@ -1,7 +1,7 @@
 use web_sys::{WebGl2RenderingContext as Gl, WebGlProgram, WebGlUniformLocation};
 
 use super::{init_shader_program, uniform_texture};
-use crate::{objects::object::Object, light::Directional};
+use crate::{light::Directional, objects::object::Object};
 
 pub struct RenderLight {
     program: WebGlProgram,

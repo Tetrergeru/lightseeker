@@ -72,7 +72,11 @@ impl RenderPointLight {
         );
         gl.enable_vertex_attrib_array(self.vertex_textcoord_location);
 
-        gl.uniform_matrix4fv_with_f32_array(Some(&self.projection_location), true, &(light * obj.transform_matrix()));
+        gl.uniform_matrix4fv_with_f32_array(
+            Some(&self.projection_location),
+            true,
+            &(light * obj.transform_matrix()),
+        );
 
         gl.bind_texture(Gl::TEXTURE_2D, Some(obj.texture.location()));
         uniform_texture(gl, &self.texture_location, obj.texture.location());

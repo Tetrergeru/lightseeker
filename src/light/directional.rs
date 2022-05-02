@@ -37,7 +37,7 @@ impl Directional {
     }
 
     pub fn matrix(&self) -> Matrix {
-        Matrix::perspective(self.fov, 1.0, 1.0, 20.0) * self.transform.reverse_matrix() 
+        Matrix::perspective(self.fov, 1.0, 1.0, 20.0) * self.transform.reverse_matrix()
     }
 
     pub fn depth(&self) -> &Rc<Texture> {

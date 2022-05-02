@@ -54,7 +54,8 @@ impl GlContext {
     }
 
     pub fn bind_framebuffer(&self, light: &Light) {
-        self.gl.bind_framebuffer(Gl::FRAMEBUFFER, Some(&self.framebuffer));
+        self.gl
+            .bind_framebuffer(Gl::FRAMEBUFFER, Some(&self.framebuffer));
         self.gl.framebuffer_texture_2d(
             Gl::FRAMEBUFFER,
             Gl::DEPTH_ATTACHMENT,

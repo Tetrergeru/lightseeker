@@ -2,7 +2,7 @@ use web_sys::WebGl2RenderingContext as Gl;
 
 use std::rc::Rc;
 
-use crate::{objects::texture::Texture, geometry::Transform};
+use crate::{geometry::Transform, objects::texture::Texture};
 
 pub use self::{directional::Directional, point::Point};
 
