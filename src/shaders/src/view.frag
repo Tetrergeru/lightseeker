@@ -2,7 +2,7 @@
 precision mediump float;
 
 #define PI 3.14159265
-#define MAX_LIGHTS 16
+#define MAX_LIGHTS 20
 
 in vec2 textCoord;
 in vec4 fragNormal;
@@ -20,6 +20,7 @@ struct Light {
     float diffuse;
     float specular;
     sampler2D map;
+    vec3 color;
 
     // Point light will use all 4 matrices, whereas directional light will use only the first
     mat4[4] projection;
@@ -106,20 +107,20 @@ float calculatePointLight(Light light, vec3 normal) {
 void main() {
     vec3 normal = normalize(fragNormal.xyz);
 
-    float brightness;
+    vec3 brightness;
     if (ignoreLight == 0) {
-        brightness = ambient;
+        brightness = vec3(ambient, ambient, ambient);
         for (int i = 0; i < MAX_LIGHTS; i++) {
             if (lights[i].type == LightSequenceEnd) {
                 break;
             } else if (lights[i].type == DirectionalLightType) {
-                brightness += calculateProjectorLight(lights[i], normal);
+                brightness += lights[i].color * calculateProjectorLight(lights[i], normal);
             } else {
-                brightness += calculatePointLight(lights[i], normal);
+                brightness += lights[i].color * calculatePointLight(lights[i], normal);
             }
         }
     } else {
-        brightness = 1.0;
+        brightness = vec3(1.0, 1.0, 1.0);;
     }
 
     color = vec4(

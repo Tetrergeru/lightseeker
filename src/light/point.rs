@@ -11,6 +11,7 @@ pub struct Point {
     pub transform: Transform,
     pub diffuse: f32,
     pub specular: f32,
+    pub color: Vector3,
 
     w: u32,
     h: u32,
@@ -27,6 +28,7 @@ impl Point {
             transform,
             diffuse: 1.0,
             specular: 1.0,
+            color: Vector3::from_xyz(1.0, 1.0, 1.0),
             w,
             h,
             depth: Rc::new(Texture::new_depth(gl, w, h)),
@@ -34,6 +36,15 @@ impl Point {
         }
     }
 
+    pub fn with_color(mut self, color: Vector3) -> Self {
+        self.color = color;
+        self
+    }
+
+    pub fn color(&self) -> Vector3 {
+        self.color
+    }
+    
     pub fn depth(&self) -> &Rc<Texture> {
         &self.depth
     }

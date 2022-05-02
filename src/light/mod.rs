@@ -2,7 +2,10 @@ use web_sys::WebGl2RenderingContext as Gl;
 
 use std::rc::Rc;
 
-use crate::{geometry::Transform, objects::texture::Texture};
+use crate::{
+    geometry::{Transform, Vector3},
+    objects::texture::Texture,
+};
 
 pub use self::{directional::Directional, point::Point};
 
@@ -19,6 +22,20 @@ impl Light {
         match self {
             Light::Directional(d) => d.depth(),
             Light::Point(p) => p.depth(),
+        }
+    }
+
+    pub fn with_color(self, color: Vector3) -> Self {
+        match self {
+            Light::Directional(d) => Light::Directional(d.with_color(color)),
+            Light::Point(p) => Light::Point(p.with_color(color)),
+        }
+    }
+
+    pub fn color(&self) -> Vector3 {
+        match self {
+            Light::Directional(d) => d.color(),
+            Light::Point(p) => p.color(),
         }
     }
 

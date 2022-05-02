@@ -1,6 +1,7 @@
 use std::{collections::HashMap, rc::Rc};
 
 use gloo::{events::EventListener, utils::document};
+use gloo_render::{request_animation_frame, AnimationFrame};
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::spawn_local;
 use web_sys::{HtmlCanvasElement, KeyboardEvent, MouseEvent, WebGl2RenderingContext as Gl};
@@ -29,7 +30,11 @@ pub struct App {
     mouse_down: bool,
     size: Vector2,
 
+    timer_start: f64,
+    frames: usize,
+
     _keydown_listener: EventListener,
+    _frame: Option<AnimationFrame>,
 }
 
 pub enum Msg {
@@ -39,6 +44,7 @@ pub enum Msg {
     MouseUp(MouseEvent),
     ShapeLoaded(String, Shape),
     TextureLoaded(String, Texture),
+    Timer(f64),
 }
 
 impl Component for App {
@@ -69,12 +75,16 @@ impl Component for App {
             size,
             lights: vec![],
 
+            timer_start: 0.0,
+            frames: 0,
+
             context: None,
             _keydown_listener: keydown_listener,
+            _frame: None,
         }
     }
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::KeyDown(e) => {
                 let key = e.code();
@@ -91,17 +101,16 @@ impl Component for App {
                     "Digit2" => self.move_point_light(Vector3::from_xyz(0.0, -0.2, 0.0)),
                     _ => (),
                 }
-                self.draw();
                 false
             }
             Msg::ShapeLoaded(name, shape) => {
                 self.shapes.insert(name, Rc::new(shape));
-                self.single_download_finished();
+                self.single_download_finished(ctx);
                 false
             }
             Msg::TextureLoaded(name, texture) => {
                 self.textures.insert(name, Rc::new(texture));
-                self.single_download_finished();
+                self.single_download_finished(ctx);
                 false
             }
             Msg::MouseDown(_) => {
@@ -114,12 +123,31 @@ impl Component for App {
                     let y = e.movement_y() as f32;
                     self.camera.rotate_v(-y / self.size.y() * 10.0);
                     self.camera.rotate_h(x / self.size.x() * 10.0);
-                    self.draw();
                 }
                 false
             }
             Msg::MouseUp(_) => {
                 self.mouse_down = false;
+                false
+            }
+            Msg::Timer(t) => {
+                if self.frames == 0 {
+                    self.timer_start = t;
+                    self.frames = 1;
+                }
+
+                self.frames += 1;
+                if self.frames == 60 {
+                    log::debug!(
+                        "App udate Timer fps: {}",
+                        ((self.frames as f64 - 1.0) / (t - self.timer_start)) * 1000.0
+                    );
+                    self.timer_start = t;
+                    self.frames = 1;
+                }
+
+                self.draw();
+                self.request_frame(ctx);
                 false
             }
         }
@@ -246,15 +274,22 @@ impl App {
         }
     }
 
-    fn single_download_finished(&mut self) {
+    fn single_download_finished(&mut self, ctx: &Context<Self>) {
         self.currently_downloading -= 1;
 
         if self.currently_downloading == 0 {
-            self.on_downloaded();
+            self.on_downloaded(ctx);
         }
     }
 
-    fn on_downloaded(&mut self) {
+    fn request_frame(&mut self, ctx: &Context<Self>) {
+        self._frame = Some({
+            let link = ctx.link().clone();
+            request_animation_frame(move |time| link.send_message(Msg::Timer(time)))
+        })
+    }
+
+    fn on_downloaded(&mut self, ctx: &Context<Self>) {
         self.objects.push(Object::new(
             self.shapes["Skull"].clone(),
             self.textures["Skull"].clone(),
@@ -322,16 +357,21 @@ impl App {
         let light = Light::new_directional(
             &self.gl(),
             Transform::from_xyz_hv(0.0, 0.0, -5.0, std::f32::consts::PI * 1.0, -0.6),
-        );
+        )
+        .with_color(Vector3::from_xyz(0.0, 0.0, 1.0));
         self.lights.push(light);
 
         let light = Light::new_directional(
             &self.gl(),
             Transform::from_xyz_hv(0.0, 3.0, 5.0, std::f32::consts::PI * 0.0, 0.6),
-        );
+        )
+        .with_color(Vector3::from_xyz(1.0, 1.0, 0.0));
         self.lights.push(light);
 
-        let light = Light::new_point(&self.gl(), Transform::from_xyz(0.0, 1.0, -2.0));
+        let light = Light::new_point(&self.gl(), Transform::from_xyz(0.0, 1.0, -3.0))
+            .with_color(Vector3::from_xyz(0.0, 1.0, 0.0));
         self.lights.push(light);
+
+        self.request_frame(ctx);
     }
 }

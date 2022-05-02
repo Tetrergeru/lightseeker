@@ -45,7 +45,7 @@ impl ViewShader {
         let ignore_light_location = gl.get_uniform_location(&program, "ignoreLight").unwrap();
 
         let mut light = vec![];
-        for i in 0..16 {
+        for i in 0..20 {
             light.push(LightUniform::new(gl, &program, &format!("lights[{}]", i)));
         }
 
@@ -132,7 +132,6 @@ impl ViewShader {
             let mut texture_id = Gl::TEXTURE1;
             for (i, light) in light.iter().enumerate() {
                 self.light[i].bind(gl, light, texture_id as u32);
-                log::debug!("View self.light[i].bind({})", texture_id - Gl::TEXTURE0);
                 texture_id += 1;
             }
             if light.len() < self.light.len() {
@@ -164,6 +163,7 @@ struct LightUniform {
     direction: WebGlUniformLocation,
     fov: WebGlUniformLocation,
     inner_fov: WebGlUniformLocation,
+    color: WebGlUniformLocation,
 }
 
 impl LightUniform {
@@ -187,6 +187,7 @@ impl LightUniform {
             direction: uniform("direction"),
             fov: uniform("fov"),
             inner_fov: uniform("innerFov"),
+            color: uniform("color"),
         }
     }
 
@@ -201,6 +202,7 @@ impl LightUniform {
         gl.active_texture(texture);
         gl.bind_texture(Gl::TEXTURE_2D, Some(light.depth().location()));
         gl.uniform1i(Some(&self.map), (texture - Gl::TEXTURE0) as i32);
+        gl.uniform3fv_with_f32_array(Some(&self.color), &light.color());
 
         match light {
             Light::Directional(d) => self.bind_direction_specific(gl, d),

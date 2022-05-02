@@ -63,15 +63,6 @@ impl GlContext {
             Some(light.depth().location()),
             0,
         );
-        if let Light::Point(p) = light {
-            self.gl.framebuffer_texture_2d(
-                Gl::FRAMEBUFFER,
-                Gl::COLOR_ATTACHMENT0,
-                Gl::TEXTURE_2D,
-                Some(p.texture.location()),
-                0,
-            );
-        }
         let (w, h) = light.texture_bounds();
         self.gl.viewport(0, 0, w as i32, h as i32);
     }

@@ -13,6 +13,7 @@ pub struct Directional {
     pub inner_fov: f32,
     pub diffuse: f32,
     pub specular: f32,
+    pub color: Vector3,
 
     w: u32,
     h: u32,
@@ -31,9 +32,19 @@ impl Directional {
             inner_fov: std::f32::consts::PI / 3.0,
             diffuse: 2.0,
             specular: 2.0,
+            color: Vector3::from_xyz(1.0, 1.0, 1.0),
             w,
             h,
         }
+    }
+
+    pub fn with_color(mut self, color: Vector3) -> Self {
+        self.color = color;
+        self
+    }
+
+    pub fn color(&self) -> Vector3 {
+        self.color
     }
 
     pub fn matrix(&self) -> Matrix {
