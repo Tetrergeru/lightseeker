@@ -2,10 +2,11 @@ use std::rc::Rc;
 
 use crate::geometry::{Matrix, Transform};
 
-use super::{shape::Shape, texture::Texture};
+use super::{parsers::skeleton::Skeleton, shape::Shape, texture::Texture};
 
 pub struct Object {
     pub shape: Rc<Shape>,
+    pub skeleton: Vec<Transform>,
     pub texture: Rc<Texture>,
     pub transform: Transform,
     pub ignored_by_light: bool,
@@ -18,7 +19,13 @@ impl Object {
             texture,
             transform,
             ignored_by_light: false,
+            skeleton: vec![],
         }
+    }
+
+    pub fn with_skeleton(mut self, skeleton: Skeleton) -> Self {
+        // self.skeleton =
+        self
     }
 
     pub fn ignored_by_light(mut self) -> Self {

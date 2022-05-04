@@ -13,7 +13,7 @@ use crate::{
     geometry::{Transform, Vector2, Vector3},
     gl_context::GlContext,
     light::Light,
-    objects::{object::Object, shape::Shape, skeleton::Skeleton, texture::Texture},
+    objects::{object::Object, parsers::skeleton::Skeleton, shape::Shape, texture::Texture},
 };
 
 pub struct App {
@@ -23,6 +23,7 @@ pub struct App {
     texts: HashMap<String, String>,
     textures: HashMap<String, Rc<Texture>>,
     objects: Vec<Object>,
+    picked_object: usize,
     currently_downloading: usize,
 
     camera: Camera,
@@ -67,6 +68,7 @@ impl Component for App {
             texts: HashMap::new(),
             textures: HashMap::new(),
             objects: vec![],
+            picked_object: 0,
             currently_downloading: 0,
 
             camera: Camera::new(Vector3::from_xyz(-8.0, 0.0, -8.0), 0.0, 0.0)
@@ -93,12 +95,12 @@ impl Component for App {
                     "KeyS" => self.camera.move_h(Vector2::from_xy(0.0, -0.2)),
                     "KeyA" => self.camera.move_h(Vector2::from_xy(0.2, 0.0)),
                     "KeyD" => self.camera.move_h(Vector2::from_xy(-0.2, 0.0)),
-                    "ArrowDown" => self.move_point_light(Vector3::from_xyz(-0.2, 0.0, 0.0)),
-                    "ArrowUp" => self.move_point_light(Vector3::from_xyz(0.2, 0.0, 0.0)),
-                    "ArrowLeft" => self.move_point_light(Vector3::from_xyz(0.0, 0.0, 0.2)),
-                    "ArrowRight" => self.move_point_light(Vector3::from_xyz(0.0, 0.0, -0.2)),
-                    "Digit1" => self.move_point_light(Vector3::from_xyz(0.0, 0.2, 0.0)),
-                    "Digit2" => self.move_point_light(Vector3::from_xyz(0.0, -0.2, 0.0)),
+                    "ArrowDown" => self.move_picked(Vector3::from_xyz(-0.2, 0.0, 0.0)),
+                    "ArrowUp" => self.move_picked(Vector3::from_xyz(0.2, 0.0, 0.0)),
+                    "ArrowLeft" => self.move_picked(Vector3::from_xyz(0.0, 0.0, 0.2)),
+                    "ArrowRight" => self.move_picked(Vector3::from_xyz(0.0, 0.0, -0.2)),
+                    "Digit1" => self.move_picked(Vector3::from_xyz(0.0, 0.2, 0.0)),
+                    "Digit2" => self.move_picked(Vector3::from_xyz(0.0, -0.2, 0.0)),
                     _ => (),
                 }
                 false
@@ -210,10 +212,10 @@ impl Component for App {
 }
 
 impl App {
-    fn move_point_light(&mut self, d: Vector3) {
-        if let Light::Point(p) = self.lights.last_mut().unwrap() {
-            p.transform.translate(d.x(), d.y(), d.z());
-        }
+    fn move_picked(&mut self, d: Vector3) {
+        let picked = self.picked_object;
+        let p = &mut self.objects[picked];
+        p.transform.translate(d.x(), d.y(), d.z());
     }
 
     fn required_shapes() -> Vec<(String, String)> {
@@ -298,16 +300,13 @@ impl App {
         let skl = Skeleton::from_file(&self.texts["Bell.skl"]);
         log::debug!("App on_downloaded skl = {:?}", skl);
 
-        self.objects.push(Object::new(
-            skull.clone(),
-            self.textures["Skull"].clone(),
-            {
+        self.objects
+            .push(Object::new(skull, self.textures["Skull"].clone(), {
                 let mut t = Transform::from_xyz(0.0, -0.3, 0.0);
                 t.rotate_v(1.2 * std::f32::consts::PI / 2.0);
                 t.scale(0.1);
                 t
-            },
-        ));
+            }));
         self.objects.push(Object::new(
             cube.clone(),
             self.textures["Grass"].clone(),
@@ -318,21 +317,26 @@ impl App {
             self.textures["Grass"].clone(),
             Transform::from_xyz(0.0, -1.0, 0.0),
         ));
+
+        let carpet_transform = {
+            let mut t = Transform::from_xyz(0.0, -2.0, 0.0);
+            t.scale(5.0);
+            t
+        };
         self.objects.push(Object::new(
             floor.clone(),
             self.textures["Carpet"].clone(),
-            {
-                let mut t = Transform::from_xyz(0.0, -2.0, 0.0);
-                t.scale(5.0);
-                t
-            },
+            carpet_transform.clone(),
         ));
+        self.picked_object = self.objects.len() - 1;
+
         self.objects.push(Object::new(
             floor.clone(),
             self.textures["Carpet"].clone(),
             {
                 let mut t = Transform::from_xyz(0.0, -2.0, -10.0);
                 t.scale(5.0);
+                t.set_parent(carpet_transform);
                 t
             },
         ));
@@ -346,18 +350,15 @@ impl App {
                 t
             },
         ));
-        self.objects.push(Object::new(
-            floor.clone(),
-            self.textures["Carpet"].clone(),
-            {
+        self.objects
+            .push(Object::new(floor, self.textures["Carpet"].clone(), {
                 let mut t = Transform::from_xyz(0.0, 4.0, -10.0);
                 t.scale(5.0);
                 t.rotate_v(std::f32::consts::PI);
                 t
-            },
-        ));
+            }));
         self.objects.push(Object::new(
-            cube.clone(),
+            cube,
             self.textures["Grass"].clone(),
             Transform::from_xyz(0.0, -1.0, -5.0),
         ));
@@ -367,6 +368,12 @@ impl App {
             Transform::from_xyz_hv(0.0, 0.0, -5.0, std::f32::consts::PI * 1.0, -0.6),
         )
         .with_color(Vector3::from_xyz(0.0, 0.0, 1.0));
+
+        log::debug!(
+            "App an_download light.direction: {:?}",
+            light.as_directional().transform.direction()
+        );
+
         self.lights.push(light);
 
         let light = Light::new_directional(

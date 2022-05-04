@@ -2,11 +2,10 @@ use web_sys::{WebGl2RenderingContext, WebGlBuffer};
 
 use crate::{
     geometry::{Vector2, Vector3},
-    objects::obj_parser::ObjParser,
     shaders::make_f32_buffer,
 };
 
-use super::vertex_data::VertexData;
+use super::parsers::shape::{ObjParser, VertexData};
 
 pub struct Shape {
     vertices: Vec<VertexData>,

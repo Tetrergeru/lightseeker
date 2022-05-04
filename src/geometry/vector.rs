@@ -118,7 +118,7 @@ impl MulAssign<f32> for Vector3 {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Vector4 {
     pub vector: [f32; 4],
 }

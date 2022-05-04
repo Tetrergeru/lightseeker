@@ -67,4 +67,12 @@ impl Light {
     pub fn new_point(gl: &Gl, transform: Transform) -> Self {
         Self::Point(Point::new(gl, transform))
     }
+
+    pub fn as_directional(&self) -> &Directional {
+        if let Light::Directional(directional) = self {
+            directional
+        } else {
+            panic!("Expected directional light");
+        }
+    }
 }

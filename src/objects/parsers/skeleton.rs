@@ -1,8 +1,11 @@
 use std::collections::HashMap;
 
-use crate::geometry::Matrix;
+use crate::{
+    geometry::{Matrix, Transform},
+    objects::parsers::parse_point_3,
+};
 
-use super::obj_parser::parse_point_3;
+use super::{obj_lines, parse_transform};
 
 #[derive(Debug)]
 pub struct Skeleton {
@@ -23,15 +26,7 @@ impl Skeleton {
             bones: vec![],
             names: HashMap::new(),
         };
-        for line in file.lines() {
-            if line.is_empty() || line.starts_with('#') {
-                continue;
-            }
-            let line = line.to_string();
-            let split: Vec<&str> = line.split(' ').filter(|s| !s.is_empty()).collect();
-            if split.is_empty() {
-                continue;
-            }
+        for split in obj_lines(file) {
             match split[0] {
                 "b" => {
                     skl.bones.push(Bone {
@@ -50,15 +45,14 @@ impl Skeleton {
         }
         skl
     }
-}
 
-fn parse_transform(data: &[&str]) -> Matrix {
-    if data.len() < 3 || data.len() % 3 != 0 {
-        panic!("Incorrect transform for a bone");
+    pub fn make_nested_transforms(&self) -> Vec<Transform> {
+        let mut transforms = Vec::with_capacity(self.bones.len());
+
+        for bone in self.bones.iter() {
+            transforms.push(Transform::new());
+        }
+
+        transforms
     }
-
-    log::info!("parse_transform data: {:?}", &data[0..3]);
-    let angles = parse_point_3(&data[0..3]);
-
-    Matrix::rotation_x(angles.x()) * Matrix::rotation_y(angles.y()) * Matrix::rotation_z(angles.z())
 }
