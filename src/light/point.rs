@@ -44,7 +44,7 @@ impl Point {
     pub fn color(&self) -> Vector3 {
         self.color
     }
-    
+
     pub fn depth(&self) -> &Rc<Texture> {
         &self.depth
     }

@@ -59,9 +59,9 @@ impl ObjParser {
                 continue;
             }
             match split[0] {
-                "v" => self.points.push(parse_point_3(&split)),
-                "vt" => self.texture_coords.push(parse_point_2(&split)),
-                "vn" => self.normals.push(parse_point_3(&split)),
+                "v" => self.points.push(parse_point_3(&split[1..])),
+                "vt" => self.texture_coords.push(parse_point_2(&split[1..])),
+                "vn" => self.normals.push(parse_point_3(&split[1..])),
                 "f" => self.parse_polygon(&split),
                 _ => continue,
             }
@@ -120,27 +120,27 @@ impl ObjParser {
     }
 }
 
-fn parse_point_3(split: &[&str]) -> Vector3 {
-    if split.len() < 4 {
+pub fn parse_point_3(split: &[&str]) -> Vector3 {
+    if split.len() < 3 {
         panic!("Not enough coordinates for a point 3");
     }
 
     let mut coords = [0.0; 3];
     for i in 0..3 {
-        coords[i] = split[i + 1].parse().unwrap();
+        coords[i] = split[i].parse().unwrap();
     }
 
     Vector3::from_xyz(coords[0], coords[1], coords[2])
 }
 
-fn parse_point_2(split: &[&str]) -> Vector2 {
-    if split.len() < 3 {
+pub fn parse_point_2(split: &[&str]) -> Vector2 {
+    if split.len() < 2 {
         panic!("Not enough coordinates for a point 3");
     }
 
     let mut coords = [0.0; 2];
     for i in 0..2 {
-        coords[i] = split[i + 1].parse().unwrap();
+        coords[i] = split[i].parse().unwrap();
     }
 
     Vector2::from_xy(coords[0], 1.0 - coords[1])

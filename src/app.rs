@@ -13,14 +13,14 @@ use crate::{
     geometry::{Transform, Vector2, Vector3},
     gl_context::GlContext,
     light::Light,
-    objects::{object::Object, shape::Shape, texture::Texture},
+    objects::{object::Object, shape::Shape, skeleton::Skeleton, texture::Texture},
 };
 
 pub struct App {
     canvas_ref: NodeRef,
     context: Option<GlContext>,
 
-    shapes: HashMap<String, Rc<Shape>>,
+    texts: HashMap<String, String>,
     textures: HashMap<String, Rc<Texture>>,
     objects: Vec<Object>,
     currently_downloading: usize,
@@ -42,7 +42,7 @@ pub enum Msg {
     MouseDown(MouseEvent),
     MouseMove(MouseEvent),
     MouseUp(MouseEvent),
-    ShapeLoaded(String, Shape),
+    TextLoaded(String, String),
     TextureLoaded(String, Texture),
     Timer(f64),
 }
@@ -64,7 +64,7 @@ impl Component for App {
         Self {
             canvas_ref: NodeRef::default(),
 
-            shapes: HashMap::new(),
+            texts: HashMap::new(),
             textures: HashMap::new(),
             objects: vec![],
             currently_downloading: 0,
@@ -103,8 +103,8 @@ impl Component for App {
                 }
                 false
             }
-            Msg::ShapeLoaded(name, shape) => {
-                self.shapes.insert(name, Rc::new(shape));
+            Msg::TextLoaded(name, text) => {
+                self.texts.insert(name, text);
                 self.single_download_finished(ctx);
                 false
             }
@@ -182,13 +182,12 @@ impl Component for App {
                 let callback = ctx
                     .link()
                     .clone()
-                    .callback(|(str, shape)| Msg::ShapeLoaded(str, shape));
+                    .callback(|(str, shape)| Msg::TextLoaded(str, shape));
 
                 self.currently_downloading += 1;
-                let gl = self.gl();
                 spawn_local(async move {
                     let text = download_text(&path).await;
-                    callback.emit((name, Shape::parse_obj_file(&text, &gl)));
+                    callback.emit((name, text));
                 });
             }
             for (path, name) in Self::required_textures() {
@@ -222,6 +221,7 @@ impl App {
             ("resources/skull.obj", "Skull"),
             ("resources/Crate1.obj", "Cube"),
             ("resources/floor.obj", "Floor"),
+            ("resources/bell.skl", "Bell.skl"),
         ]
         .map(|(path, name)| (path.to_string(), name.to_string()))
         .into_iter()
@@ -290,8 +290,16 @@ impl App {
     }
 
     fn on_downloaded(&mut self, ctx: &Context<Self>) {
+        let gl = self.gl();
+        let skull = Rc::new(Shape::parse_obj_file(&self.texts["Skull"], &gl));
+        let cube = Rc::new(Shape::parse_obj_file(&self.texts["Cube"], &gl));
+        let floor = Rc::new(Shape::parse_obj_file(&self.texts["Floor"], &gl));
+
+        let skl = Skeleton::from_file(&self.texts["Bell.skl"]);
+        log::debug!("App on_downloaded skl = {:?}", skl);
+
         self.objects.push(Object::new(
-            self.shapes["Skull"].clone(),
+            skull.clone(),
             self.textures["Skull"].clone(),
             {
                 let mut t = Transform::from_xyz(0.0, -0.3, 0.0);
@@ -301,17 +309,17 @@ impl App {
             },
         ));
         self.objects.push(Object::new(
-            self.shapes["Cube"].clone(),
+            cube.clone(),
             self.textures["Grass"].clone(),
             Transform::from_xyz(5.0, -1.0, 5.0),
         ));
         self.objects.push(Object::new(
-            self.shapes["Cube"].clone(),
+            cube.clone(),
             self.textures["Grass"].clone(),
             Transform::from_xyz(0.0, -1.0, 0.0),
         ));
         self.objects.push(Object::new(
-            self.shapes["Floor"].clone(),
+            floor.clone(),
             self.textures["Carpet"].clone(),
             {
                 let mut t = Transform::from_xyz(0.0, -2.0, 0.0);
@@ -320,7 +328,7 @@ impl App {
             },
         ));
         self.objects.push(Object::new(
-            self.shapes["Floor"].clone(),
+            floor.clone(),
             self.textures["Carpet"].clone(),
             {
                 let mut t = Transform::from_xyz(0.0, -2.0, -10.0);
@@ -329,7 +337,7 @@ impl App {
             },
         ));
         self.objects.push(Object::new(
-            self.shapes["Floor"].clone(),
+            floor.clone(),
             self.textures["Carpet"].clone(),
             {
                 let mut t = Transform::from_xyz(0.0, 4.0, 0.0);
@@ -339,7 +347,7 @@ impl App {
             },
         ));
         self.objects.push(Object::new(
-            self.shapes["Floor"].clone(),
+            floor.clone(),
             self.textures["Carpet"].clone(),
             {
                 let mut t = Transform::from_xyz(0.0, 4.0, -10.0);
@@ -349,7 +357,7 @@ impl App {
             },
         ));
         self.objects.push(Object::new(
-            self.shapes["Cube"].clone(),
+            cube.clone(),
             self.textures["Grass"].clone(),
             Transform::from_xyz(0.0, -1.0, -5.0),
         ));

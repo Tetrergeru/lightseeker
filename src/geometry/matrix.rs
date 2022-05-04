@@ -78,6 +78,18 @@ impl Matrix {
         .into()
     }
 
+    pub fn rotation_z(a: f32) -> Matrix {
+        let cos = a.cos();
+        let sin = a.sin();
+        [
+            [cos, sin, 0.0, 0.0],
+            [-sin, cos, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+        .into()
+    }
+
     pub fn set(&mut self, i: usize, j: usize, value: f32) {
         self.matrix[i * Self::SIZE + j] = value;
     }
