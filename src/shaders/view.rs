@@ -4,7 +4,7 @@ use super::init_shader_program;
 use crate::{
     camera::Camera,
     light::{Directional, Light, Point},
-    objects::object::Object,
+    objects::object::Object, geometry::Matrix,
 };
 
 pub struct ViewShader {
@@ -16,6 +16,8 @@ pub struct ViewShader {
     vertex_position_location: u32,
     vertex_normal_location: u32,
     vertex_textcoord_location: u32,
+    vertex_bones_location: u32,
+    vertex_weights_location: u32,
 
     camera_location: WebGlUniformLocation,
     camera_pos_location: WebGlUniformLocation,
@@ -24,10 +26,15 @@ pub struct ViewShader {
     texture_location: WebGlUniformLocation,
     ignore_light_location: WebGlUniformLocation,
     light: Vec<LightUniform>,
+    bones_locations: Vec<WebGlUniformLocation>,
+    bones_count_location: WebGlUniformLocation,
 }
 
 const FS_SOURCE: &str = include_str!("src/view.frag");
 const VS_SOURCE: &str = include_str!("src/view.vert");
+
+const MAX_LIGHTS: usize = 16;
+const MAX_BONES: usize = 32;
 
 impl ViewShader {
     pub fn new(gl: &Gl, width: i32, height: i32) -> Self {
@@ -36,16 +43,27 @@ impl ViewShader {
         let vertex_position_location = gl.get_attrib_location(&program, "vertexPosition") as u32;
         let vertex_normal_location = gl.get_attrib_location(&program, "vertexNormal") as u32;
         let vertex_textcoord_location = gl.get_attrib_location(&program, "vertexTexture") as u32;
+        let vertex_bones_location = gl.get_attrib_location(&program, "vertexBones") as u32;
+        let vertex_weights_location = gl.get_attrib_location(&program, "vertexWeights") as u32;
 
         let camera_location = gl.get_uniform_location(&program, "camera").unwrap();
         let camera_pos_location = gl.get_uniform_location(&program, "cameraPosition").unwrap();
         let position_location = gl.get_uniform_location(&program, "position").unwrap();
         let normal_mat_location = gl.get_uniform_location(&program, "normalMat").unwrap();
         let texture_location = gl.get_uniform_location(&program, "textureMap").unwrap();
-        let ignore_light_location = gl.get_uniform_location(&program, "ignoreLight").unwrap();
 
+        let bones_count_location = gl.get_uniform_location(&program, "boneCount").unwrap();
+        let mut bones_locations = vec![];
+        for i in 0..MAX_BONES {
+            bones_locations.push(
+                gl.get_uniform_location(&program, &format!("bones[{}]", i))
+                    .unwrap(),
+            )
+        }
+
+        let ignore_light_location = gl.get_uniform_location(&program, "ignoreLight").unwrap();
         let mut light = vec![];
-        for i in 0..20 {
+        for i in 0..MAX_LIGHTS {
             light.push(LightUniform::new(gl, &program, &format!("lights[{}]", i)));
         }
 
@@ -57,14 +75,19 @@ impl ViewShader {
             vertex_position_location,
             vertex_normal_location,
             vertex_textcoord_location,
+            vertex_bones_location,
+            vertex_weights_location,
 
             camera_location,
             camera_pos_location,
             position_location,
             normal_mat_location,
             texture_location,
-            ignore_light_location,
 
+            bones_locations,
+            bones_count_location,
+
+            ignore_light_location,
             light,
         }
     }
@@ -111,6 +134,26 @@ impl ViewShader {
         );
         gl.enable_vertex_attrib_array(self.vertex_textcoord_location);
 
+        gl.vertex_attrib_pointer_with_i32(
+            self.vertex_bones_location,
+            4,
+            Gl::FLOAT,
+            false,
+            obj.shape.step() * 4,
+            obj.shape.bones_coord_offset() * 4,
+        );
+        gl.enable_vertex_attrib_array(self.vertex_bones_location);
+
+        gl.vertex_attrib_pointer_with_i32(
+            self.vertex_weights_location,
+            4,
+            Gl::FLOAT,
+            false,
+            obj.shape.step() * 4,
+            obj.shape.weights_coord_offset() * 4,
+        );
+        gl.enable_vertex_attrib_array(self.vertex_weights_location);
+
         gl.uniform_matrix4fv_with_f32_array(Some(&self.camera_location), true, &camera.matrix());
         gl.uniform3fv_with_f32_array(Some(&self.camera_pos_location), &camera.position);
 
@@ -139,6 +182,20 @@ impl ViewShader {
             }
         } else {
             gl.uniform1i(Some(&self.ignore_light_location), 1);
+        }
+
+        gl.uniform1i(Some(&self.bones_count_location), 0);//obj.skeleton.len() as i32);
+        gl.uniform_matrix4fv_with_f32_array(
+            Some(&self.bones_locations[0]),
+            true,
+            &Matrix::ident(),
+        );
+        for (i, bone) in obj.skeleton.iter().enumerate() {
+            gl.uniform_matrix4fv_with_f32_array(
+                Some(&self.bones_locations[i + 1]),
+                true,
+                &bone.matrix(),
+            );
         }
 
         gl.active_texture(Gl::TEXTURE0);

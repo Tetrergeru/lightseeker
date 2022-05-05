@@ -1,5 +1,6 @@
 use web_sys::{HtmlImageElement, WebGl2RenderingContext as Gl, WebGlTexture};
 
+#[derive(Debug)]
 pub struct Texture {
     texture: WebGlTexture,
 }

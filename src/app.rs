@@ -13,7 +13,12 @@ use crate::{
     geometry::{Transform, Vector2, Vector3},
     gl_context::GlContext,
     light::Light,
-    objects::{object::Object, parsers::skeleton::Skeleton, shape::Shape, texture::Texture},
+    objects::{
+        object::Object,
+        parsers::{skeleton::Skeleton, skinning::Skinning},
+        shape::Shape,
+        texture::Texture,
+    },
 };
 
 pub struct App {
@@ -95,6 +100,8 @@ impl Component for App {
                     "KeyS" => self.camera.move_h(Vector2::from_xy(0.0, -0.2)),
                     "KeyA" => self.camera.move_h(Vector2::from_xy(0.2, 0.0)),
                     "KeyD" => self.camera.move_h(Vector2::from_xy(-0.2, 0.0)),
+                    "ShiftLeft" => self.camera.move_v(-0.2),
+                    "Space" => self.camera.move_v(0.2),
                     "ArrowDown" => self.move_picked(Vector3::from_xyz(-0.2, 0.0, 0.0)),
                     "ArrowUp" => self.move_picked(Vector3::from_xyz(0.2, 0.0, 0.0)),
                     "ArrowLeft" => self.move_picked(Vector3::from_xyz(0.0, 0.0, 0.2)),
@@ -140,10 +147,10 @@ impl Component for App {
 
                 self.frames += 1;
                 if self.frames == 60 {
-                    log::debug!(
-                        "App udate Timer fps: {}",
-                        ((self.frames as f64 - 1.0) / (t - self.timer_start)) * 1000.0
-                    );
+                    // log::debug!(
+                    //     "App udate Timer fps: {}",
+                    //     ((self.frames as f64 - 1.0) / (t - self.timer_start)) * 1000.0
+                    // );
                     self.timer_start = t;
                     self.frames = 1;
                 }
@@ -215,7 +222,7 @@ impl App {
     fn move_picked(&mut self, d: Vector3) {
         let picked = self.picked_object;
         let p = &mut self.objects[picked];
-        p.transform.translate(d.x(), d.y(), d.z());
+        p.skeleton[1].rotate(d);
     }
 
     fn required_shapes() -> Vec<(String, String)> {
@@ -224,6 +231,8 @@ impl App {
             ("resources/Crate1.obj", "Cube"),
             ("resources/floor.obj", "Floor"),
             ("resources/bell.skl", "Bell.skl"),
+            ("resources/bell.skin", "Bell.skin"),
+            ("resources/bell.obj", "Bell"),
         ]
         .map(|(path, name)| (path.to_string(), name.to_string()))
         .into_iter()
@@ -293,16 +302,30 @@ impl App {
 
     fn on_downloaded(&mut self, ctx: &Context<Self>) {
         let gl = self.gl();
-        let skull = Rc::new(Shape::parse_obj_file(&self.texts["Skull"], &gl));
-        let cube = Rc::new(Shape::parse_obj_file(&self.texts["Cube"], &gl));
-        let floor = Rc::new(Shape::parse_obj_file(&self.texts["Floor"], &gl));
+        let skull = Rc::new(Shape::parse(&self.texts["Skull"], &gl));
+        let cube = Rc::new(Shape::parse(&self.texts["Cube"], &gl));
+        let floor = Rc::new(Shape::parse(&self.texts["Floor"], &gl));
 
-        let skl = Skeleton::from_file(&self.texts["Bell.skl"]);
-        log::debug!("App on_downloaded skl = {:?}", skl);
+        let skl = Rc::new(Skeleton::from_file(&self.texts["Bell.skl"]));
+        let skin = Rc::new(Skinning::parse(&self.texts["Bell.skin"]));
+
+        log::debug!("App on_download skl: {:?}", skl);
+
+        let bell = Rc::new(Shape::parse_with_skin(&self.texts["Bell"], &skin, &gl));
+
+        self.objects.push(
+            Object::new(
+                bell,
+                self.textures["Grass"].clone(),
+                Transform::from_xyz(10.0, 0.0, 0.0),
+            )
+            .with_skeleton(&skl),
+        );
+        self.picked_object = self.objects.len() - 1;
 
         self.objects
             .push(Object::new(skull, self.textures["Skull"].clone(), {
-                let mut t = Transform::from_xyz(0.0, -0.3, 0.0);
+                let t = Transform::from_xyz(0.0, -0.3, 0.0);
                 t.rotate_v(1.2 * std::f32::consts::PI / 2.0);
                 t.scale(0.1);
                 t
@@ -319,7 +342,7 @@ impl App {
         ));
 
         let carpet_transform = {
-            let mut t = Transform::from_xyz(0.0, -2.0, 0.0);
+            let t = Transform::from_xyz(0.0, -2.0, 0.0);
             t.scale(5.0);
             t
         };
@@ -328,14 +351,12 @@ impl App {
             self.textures["Carpet"].clone(),
             carpet_transform.clone(),
         ));
-        self.picked_object = self.objects.len() - 1;
 
         self.objects.push(Object::new(
             floor.clone(),
             self.textures["Carpet"].clone(),
             {
-                let mut t = Transform::from_xyz(0.0, -2.0, -10.0);
-                t.scale(5.0);
+                let t = Transform::from_xyz(0.0, 0.0, -2.0);
                 t.set_parent(carpet_transform);
                 t
             },
@@ -344,7 +365,7 @@ impl App {
             floor.clone(),
             self.textures["Carpet"].clone(),
             {
-                let mut t = Transform::from_xyz(0.0, 4.0, 0.0);
+                let t = Transform::from_xyz(0.0, 4.0, 0.0);
                 t.scale(5.0);
                 t.rotate_v(std::f32::consts::PI);
                 t
@@ -352,7 +373,7 @@ impl App {
         ));
         self.objects
             .push(Object::new(floor, self.textures["Carpet"].clone(), {
-                let mut t = Transform::from_xyz(0.0, 4.0, -10.0);
+                let t = Transform::from_xyz(0.0, 4.0, -10.0);
                 t.scale(5.0);
                 t.rotate_v(std::f32::consts::PI);
                 t
@@ -384,7 +405,7 @@ impl App {
         self.lights.push(light);
 
         let light = Light::new_point(&self.gl(), Transform::from_xyz(0.0, 1.0, -3.0))
-            .with_color(Vector3::from_xyz(0.0, 1.0, 0.0));
+            .with_color(Vector3::from_xyz(1.0, 1.0, 0.5));
         self.lights.push(light);
 
         self.request_frame(ctx);

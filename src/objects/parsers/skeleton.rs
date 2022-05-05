@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{
-    geometry::{Matrix, Transform},
-    objects::parsers::parse_point_3,
-};
+use crate::geometry::{transform::RawTransform, Transform};
 
 use super::{obj_lines, parse_transform};
 
@@ -17,7 +14,7 @@ pub struct Skeleton {
 pub struct Bone {
     pub parent: isize,
     pub name: String,
-    pub initial_transform: Matrix,
+    pub initial_transform: RawTransform,
 }
 
 impl Skeleton {
@@ -32,7 +29,7 @@ impl Skeleton {
                     skl.bones.push(Bone {
                         name: split[1].to_string(),
                         parent: -1,
-                        initial_transform: Matrix::ident(),
+                        initial_transform: RawTransform::new(),
                     });
                     skl.names.insert(split[1].to_string(), skl.bones.len() - 1);
                 }
@@ -49,8 +46,16 @@ impl Skeleton {
     pub fn make_nested_transforms(&self) -> Vec<Transform> {
         let mut transforms = Vec::with_capacity(self.bones.len());
 
-        for bone in self.bones.iter() {
+        for _bone in self.bones.iter() {
             transforms.push(Transform::new());
+        }
+
+        for (idx, bone) in self.bones.iter().enumerate() {
+            if bone.parent < 0 {
+                continue;
+            }
+            let parent = transforms[bone.parent as usize].clone();
+            transforms[idx].set_parent(parent);
         }
 
         transforms

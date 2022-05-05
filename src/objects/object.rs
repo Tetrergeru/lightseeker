@@ -23,8 +23,8 @@ impl Object {
         }
     }
 
-    pub fn with_skeleton(mut self, skeleton: Skeleton) -> Self {
-        // self.skeleton =
+    pub fn with_skeleton(mut self, skeleton: &Skeleton) -> Self {
+        self.skeleton = skeleton.make_nested_transforms();
         self
     }
 

@@ -3,18 +3,17 @@ use std::rc::Rc;
 
 use crate::geometry::{Matrix, Vector3};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Transform(Rc<RefCell<TransformInternal>>);
 
 impl Transform {
     pub fn new() -> Self {
-        Self::from_start(RawTransform::new())
+        Self::from_raw(RawTransform::new())
     }
 
-    pub fn from_start(start: RawTransform) -> Self {
+    pub fn from_raw(raw: RawTransform) -> Self {
         Self(Rc::new(RefCell::new(TransformInternal {
-            start,
-            raw: RawTransform::new(),
+            raw,
             parent: None,
         })))
     }
@@ -25,7 +24,7 @@ impl Transform {
     }
 
     pub fn from_xyz_hv(x: f32, y: f32, z: f32, h: f32, v: f32) -> Self {
-        let mut t = Self::new();
+        let t = Self::new();
         t.translate(x, y, z);
         t.rotate_h(h);
         t.rotate_v(v);
@@ -33,9 +32,13 @@ impl Transform {
     }
 
     pub fn from_xyz(x: f32, y: f32, z: f32) -> Self {
-        let mut t = Self::new();
+        let t = Self::new();
         t.translate(x, y, z);
         t
+    }
+
+    pub fn to_raw(&self) -> RawTransform {
+        self.0.borrow().raw.clone()
     }
 
     pub fn matrix(&self) -> Matrix {
@@ -60,22 +63,27 @@ impl Transform {
         this.raw.position()
     }
 
-    pub fn translate(&mut self, dx: f32, dy: f32, dz: f32) {
+    pub fn translate(&self, dx: f32, dy: f32, dz: f32) {
         let mut this = self.0.borrow_mut();
         this.raw.translate(dx, dy, dz);
     }
 
-    pub fn rotate_h(&mut self, dh: f32) {
+    pub fn rotate(&self, rot: Vector3) {
+        let mut this = self.0.borrow_mut();
+        this.raw.rotate(rot)
+    }
+
+    pub fn rotate_h(&self, dh: f32) {
         let mut this = self.0.borrow_mut();
         this.raw.rotate_h(dh)
     }
 
-    pub fn rotate_v(&mut self, dv: f32) {
+    pub fn rotate_v(&self, dv: f32) {
         let mut this = self.0.borrow_mut();
         this.raw.rotate_v(dv)
     }
 
-    pub fn scale(&mut self, scale_factor: f32) {
+    pub fn scale(&self, scale_factor: f32) {
         let mut this = self.0.borrow_mut();
         this.raw.scale(scale_factor);
     }
@@ -87,23 +95,23 @@ impl Default for Transform {
     }
 }
 
+#[derive(Debug)]
 pub struct TransformInternal {
-    start: RawTransform,
     raw: RawTransform,
     parent: Option<Transform>,
 }
 
 impl TransformInternal {
     pub fn matrix(&self) -> Matrix {
-        let mut matrix = self.start.matrix() * self.raw.matrix();
+        let mut matrix = self.raw.matrix();
         if let Some(parent) = &self.parent {
-            matrix = matrix * parent.matrix();
+            matrix = parent.matrix() * matrix;
         }
         matrix
     }
 
     pub fn reverse_matrix(&self) -> Matrix {
-        let mut matrix = self.start.reverse_matrix() * self.raw.reverse_matrix();
+        let mut matrix = self.raw.reverse_matrix();
         if let Some(parent) = &self.parent {
             matrix = parent.reverse_matrix() * matrix;
         }
@@ -111,7 +119,7 @@ impl TransformInternal {
     }
 
     pub fn normal_matrix(&self) -> Matrix {
-        let mut matrix = self.start.normal_matrix() * self.raw.normal_matrix();
+        let mut matrix = self.raw.normal_matrix();
         if let Some(parent) = &self.parent {
             matrix = matrix * parent.normal_matrix();
         }
@@ -119,6 +127,7 @@ impl TransformInternal {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct RawTransform {
     position: Vector3,
     scale: f32,
@@ -187,7 +196,10 @@ impl RawTransform {
 
     pub fn rotate_v(&mut self, dv: f32) {
         self.rotation += Vector3::from_xyz(dv, 0.0, 0.0);
-        log::debug!("RawTransform rotate_v self.rotation: {:?}", self.rotation);
+    }
+
+    pub fn rotate(&mut self, rot: Vector3) {
+        self.rotation += rot;
     }
 
     pub fn scale(&mut self, scale_factor: f32) {

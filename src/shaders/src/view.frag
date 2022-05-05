@@ -2,7 +2,7 @@
 precision mediump float;
 
 #define PI 3.14159265
-#define MAX_LIGHTS 20
+#define MAX_LIGHTS 16
 
 in vec2 textCoord;
 in vec4 fragNormal;
@@ -120,8 +120,10 @@ void main() {
             }
         }
     } else {
-        brightness = vec3(1.0, 1.0, 1.0);;
+        brightness = vec3(1.0, 1.0, 1.0);
     }
+
+    brightness = brightness * 0.00001 + vec3(1.0, 1.0, 1.0);
 
     color = vec4(
         texture(textureMap, textCoord).rgb * brightness,

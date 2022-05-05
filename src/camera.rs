@@ -47,6 +47,11 @@ impl Camera {
         self.eval_matrix();
     }
 
+    pub fn move_v(&mut self, dv: f32) {
+        self.position += Vector3::from_xyz(0.0, dv, 0.0);
+        self.eval_matrix();
+    }
+
     pub fn rotate_h(&mut self, angle: f32) {
         self.angle_h += angle;
         self.eval_matrix();

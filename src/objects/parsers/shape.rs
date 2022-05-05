@@ -2,7 +2,7 @@ use crate::geometry::{vector::Vector4, Vector2, Vector3};
 
 use super::{obj_lines, parse_point_2, parse_point_3, skinning::Skinning};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct VertexData {
     pub point: Vector3,
     pub normal: Vector3,
@@ -50,7 +50,9 @@ impl ObjParser {
     }
 
     pub fn parse_with_skin(file: &str, skin: &Skinning) -> Vec<VertexData> {
-        Self::new().parse_obj(file, Some(skin))
+        let vd = Self::new().parse_obj(file, Some(skin));
+        log::debug!("ObjParser parse_with_skin vd = {:?}", vd);
+        vd
     }
 
     fn new() -> Self {
@@ -101,13 +103,13 @@ impl ObjParser {
     fn parse_vertex_data(&self, string: &str, skinning: Option<&Skinning>) -> RawVertexData {
         let split: Vec<&str> = string.split('/').collect();
 
-        let point_idx: usize = split[0].parse().unwrap();
-        let point = self.points[point_idx - 1];
+        let point_idx = split[0].parse::<usize>().unwrap() - 1;
+        let point = self.points[point_idx];
 
-        let texture_idx: usize = split[1].parse().unwrap();
-        let texture = self.texture_coords[texture_idx - 1];
+        let texture_idx = split[1].parse::<usize>().unwrap() - 1;
+        let texture = self.texture_coords[texture_idx];
 
-        let skinning_vertex = skinning.map(|it| &it.vertices[self.vertices.len()]);
+        let skinning_vertex = skinning.map(|it| &it.vertices[point_idx]);
 
         RawVertexData {
             point,

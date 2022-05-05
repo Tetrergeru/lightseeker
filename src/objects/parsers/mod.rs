@@ -1,4 +1,4 @@
-use crate::geometry::{Matrix, Vector2, Vector3};
+use crate::geometry::{Vector2, Vector3, transform::RawTransform};
 
 pub mod shape;
 pub mod skeleton;
@@ -30,7 +30,7 @@ pub fn parse_point_2(split: &[&str]) -> Vector2 {
     Vector2::from_xy(coords[0], 1.0 - coords[1])
 }
 
-pub fn parse_transform(data: &[&str]) -> Matrix {
+pub fn parse_transform(data: &[&str]) -> RawTransform {
     if data.len() < 3 || data.len() % 3 != 0 {
         panic!("Incorrect transform for a bone");
     }
@@ -38,7 +38,9 @@ pub fn parse_transform(data: &[&str]) -> Matrix {
     log::info!("parse_transform data: {:?}", &data[0..3]);
     let angles = parse_point_3(&data[0..3]);
 
-    Matrix::rotation_x(angles.x()) * Matrix::rotation_y(angles.y()) * Matrix::rotation_z(angles.z())
+    let mut t = RawTransform::new();
+    t.rotate(angles);
+    t
 }
 
 pub fn obj_lines(file: &str) -> impl Iterator<Item = Vec<&str>> {
