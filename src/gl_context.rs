@@ -33,6 +33,8 @@ impl GlContext {
             .dyn_into::<Gl>()
             .unwrap();
         gl.enable(Gl::DEPTH_TEST);
+        gl.enable(Gl::CULL_FACE);
+        gl.cull_face(Gl::BACK);
         let w = canvas.width() as i32;
         let h = canvas.height() as i32;
         Self {

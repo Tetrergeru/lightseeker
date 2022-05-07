@@ -82,7 +82,7 @@ impl Point {
     }
 
     pub fn matrices(&self) -> [Matrix; 4] {
-        self.matrices_with_nf(1.0, 20.0)
+        self.matrices_with_nf(0.1, 20.0)
     }
 
     pub fn matrices_with_nf(&self, near: f32, far: f32) -> [Matrix; 4] {

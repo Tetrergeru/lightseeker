@@ -3,8 +3,9 @@ use web_sys::{WebGl2RenderingContext as Gl, WebGlProgram, WebGlUniformLocation};
 use super::init_shader_program;
 use crate::{
     camera::Camera,
+    geometry::Matrix,
     light::{Directional, Light, Point},
-    objects::object::Object, geometry::Matrix,
+    objects::object::Object,
 };
 
 pub struct ViewShader {
@@ -45,6 +46,15 @@ impl ViewShader {
         let vertex_textcoord_location = gl.get_attrib_location(&program, "vertexTexture") as u32;
         let vertex_bones_location = gl.get_attrib_location(&program, "vertexBones") as u32;
         let vertex_weights_location = gl.get_attrib_location(&program, "vertexWeights") as u32;
+
+        log::info!(
+            "ViewShader new atrs = {} {} {} {} {}",
+            vertex_position_location,
+            vertex_normal_location,
+            vertex_textcoord_location,
+            vertex_bones_location,
+            vertex_weights_location
+        );
 
         let camera_location = gl.get_uniform_location(&program, "camera").unwrap();
         let camera_pos_location = gl.get_uniform_location(&program, "cameraPosition").unwrap();
@@ -184,12 +194,8 @@ impl ViewShader {
             gl.uniform1i(Some(&self.ignore_light_location), 1);
         }
 
-        gl.uniform1i(Some(&self.bones_count_location), 0);//obj.skeleton.len() as i32);
-        gl.uniform_matrix4fv_with_f32_array(
-            Some(&self.bones_locations[0]),
-            true,
-            &Matrix::ident(),
-        );
+        gl.uniform1i(Some(&self.bones_count_location), obj.skeleton.len() as i32);
+        gl.uniform_matrix4fv_with_f32_array(Some(&self.bones_locations[0]), true, &Matrix::ident());
         for (i, bone) in obj.skeleton.iter().enumerate() {
             gl.uniform_matrix4fv_with_f32_array(
                 Some(&self.bones_locations[i + 1]),

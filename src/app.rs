@@ -389,12 +389,6 @@ impl App {
             Transform::from_xyz_hv(0.0, 0.0, -5.0, std::f32::consts::PI * 1.0, -0.6),
         )
         .with_color(Vector3::from_xyz(0.0, 0.0, 1.0));
-
-        log::debug!(
-            "App an_download light.direction: {:?}",
-            light.as_directional().transform.direction()
-        );
-
         self.lights.push(light);
 
         let light = Light::new_directional(
@@ -405,7 +399,7 @@ impl App {
         self.lights.push(light);
 
         let light = Light::new_point(&self.gl(), Transform::from_xyz(0.0, 1.0, -3.0))
-            .with_color(Vector3::from_xyz(1.0, 1.0, 0.5));
+            .with_color(Vector3::from_xyz(0.8, 0.8, 0.3));
         self.lights.push(light);
 
         self.request_frame(ctx);

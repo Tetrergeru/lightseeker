@@ -121,7 +121,7 @@ impl TransformInternal {
     pub fn normal_matrix(&self) -> Matrix {
         let mut matrix = self.raw.normal_matrix();
         if let Some(parent) = &self.parent {
-            matrix = matrix * parent.normal_matrix();
+            matrix = parent.normal_matrix() * matrix;
         }
         matrix
     }
@@ -158,7 +158,10 @@ impl RawTransform {
     }
 
     pub fn direction(&self) -> Vector3 {
-        self.normal_matrix() * Vector3::from_xyz(0.0, 0.0, -1.0)
+        // Matrix::rotation_z(-self.rotation.z())
+        Matrix::rotation_y(self.rotation.y())
+            * Matrix::rotation_x(self.rotation.x())
+            * Vector3::from_xyz(0.0, 0.0, -1.0)
     }
 
     pub fn matrix(&self) -> Matrix {
@@ -177,9 +180,9 @@ impl RawTransform {
     }
 
     pub fn normal_matrix(&self) -> Matrix {
-        Matrix::rotation_z(-self.rotation.z())
-            * Matrix::rotation_x(-self.rotation.x())
-            * Matrix::rotation_y(-self.rotation.y())
+        Matrix::rotation_z(self.rotation.z())
+            * Matrix::rotation_y(self.rotation.y())
+            * Matrix::rotation_x(self.rotation.x())
     }
 
     pub fn position(&self) -> Vector3 {

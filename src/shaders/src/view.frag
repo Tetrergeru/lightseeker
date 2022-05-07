@@ -45,7 +45,7 @@ float calculatePhong(float lightDiffuse, float lightSpecular, vec3 toLightVec, v
     float newDiffuse = lightDiffuse * diff;
 
     vec3 reflection = dot(toLightVec, normal) * normal * 2.0 - toLightVec;
-    vec3 toCameraVec = normalize(cameraPosition - fragPosition.xyz);
+    vec3 toCameraVec = -normalize(cameraPosition - fragPosition.xyz);
     float spec = pow(max(dot(reflection, toCameraVec), 0.0), 32.0);
     float newSpecular = lightSpecular * spec;
 
@@ -65,8 +65,8 @@ float calculateProjectorLight(Light light, vec3 normal) {
         return 0.0;
     }
 
-    vec3 fromLightVec = normalize(fragPosition.xyz - light.position);
-    vec3 toLightVec = -fromLightVec;
+    vec3 toLightVec = normalize(light.position - fragPosition.xyz);
+    vec3 fromLightVec = -toLightVec;
 
     float theta = dot(fromLightVec, light.direction);
     float B = light.fov / 2.0;
@@ -74,7 +74,7 @@ float calculateProjectorLight(Light light, vec3 normal) {
     float epsilon = cos(A) - cos(B);
     float intensity = clamp((theta - cos(B)) / epsilon, 0.0, 1.0);
 
-    return intensity * calculatePhong(light.diffuse, light.specular, -toLightVec, normal);
+    return intensity * light.diffuse + calculatePhong(0.0, light.specular, toLightVec, normal);
 }
 
 vec2 textureByDirection(int direction, vec2 texture) {
@@ -85,7 +85,7 @@ vec2 textureByDirection(int direction, vec2 texture) {
 }
 
 float calculatePointLight(Light light, vec3 normal) {
-    vec3 toLightVec = -normalize(fragPosition.xyz - light.position);
+    vec3 toLightVec = normalize(light.position - fragPosition.xyz);
     for (int i = 0; i < 4; i++) {
         vec4 frag = light.projection[i] * fragPosition;
 
@@ -94,8 +94,8 @@ float calculatePointLight(Light light, vec3 normal) {
 
         bool isInLight = in_range(frag.x) && in_range(frag.y) && in_range(frag.z);
         if (isInLight) {
-            if (frag.z - texture(light.map, textureByDirection(i, frag.xy)).r < 0.01) {
-                return calculatePhong(light.diffuse, light.specular, -toLightVec, normal);
+            if (frag.z - texture(light.map, textureByDirection(i, frag.xy)).r < 0.001) {
+                return calculatePhong(light.diffuse, light.specular, toLightVec, normal);
             }
             break;
         }
@@ -123,11 +123,11 @@ void main() {
         brightness = vec3(1.0, 1.0, 1.0);
     }
 
-    brightness = brightness * 0.00001 + vec3(1.0, 1.0, 1.0);
-
-    color = vec4(
+    color = mix(
+    vec4(
         texture(textureMap, textCoord).rgb * brightness,
         1.0
-    );
+    ),
+    vec4(vec4(0.5) + fragNormal * 0.5), 0.0001);
 }
 
