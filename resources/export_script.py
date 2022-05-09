@@ -34,20 +34,21 @@ def export_skin(mesh, arm, fname):
 
 def export_anim(arm, fname):
     with open(fname, "w") as file:
-        for i in range(0, 20):
-            j = i * 3
+        for i in range(0, 30):
+            j = i * 2
             bpy.context.scene.frame_set(j)
             file.write("fr %d\n" % (j + 1))
             for bone in arm.pose.bones:
                 file.write("af ")
                 m = bone.matrix_basis
-                m = Matrix.Translation(-bone.tail) @ m @ Matrix.Translation(bone.tail)
+                print(bone.head)
+                m = Matrix.Translation(bone.head) @ m @ Matrix.Translation(-bone.head)
 #                m = arm.convert_space(pose_bone=bone, 
-#                    matrix=bone.matrix,
-#                    from_space='POSE',
-#                    to_space='WORLD',
+#                    matrix=bone.matrix_basis,
+#                    from_space='LOCAL',
+#                    to_space='POSE',
 #                )
-                print(m)
+#                print(m)
                 for a in matrix_decompose(m):
                     file.write("%f " % a)
                 file.write("\n")
@@ -58,13 +59,13 @@ EPS = 0.0001
 
 def matrix_decompose(mat):
     tr, rot, sc = mat.decompose()
-    rot = rot.to_euler("YXZ")
-    result = [rot[0], rot[1], rot[2]]
+    rot = rot.to_euler("XYZ")
+    result = [rot[0], rot[2], rot[1]]
     if abs(tr[0]) > EPS and abs(tr[1]) > EPS and abs(tr[2]) > EPS:
-        result.extend(tr)
+        result.extend([tr[0], tr[2], tr[1]])
     if abs(sc[0]) > 1 + EPS and abs(sc[1]) > 1 + EPS and abs(sc[2]) > 1 + EPS:
-        result.extend(tr)
-        result.extend(sc)
+        result.extend([tr[0], tr[2], tr[1]])
+        result.extend([sc[0], sc[2], sc[1]])
     return result
 
 #export_skl(arm, "bell.skl")
