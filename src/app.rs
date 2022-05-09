@@ -15,7 +15,7 @@ use crate::{
     light::Light,
     objects::{
         object::Object,
-        parsers::{skeleton::Skeleton, skinning::Skinning},
+        parsers::{animation::Animation, skeleton::Skeleton, skinning::Skinning},
         shape::Shape,
         texture::Texture,
     },
@@ -33,6 +33,9 @@ pub struct App {
 
     camera: Camera,
     lights: Vec<Light>,
+    animation: Option<Animation>,
+    animation_frame: isize,
+
     mouse_down: bool,
     size: Vector2,
 
@@ -81,6 +84,8 @@ impl Component for App {
             mouse_down: false,
             size,
             lights: vec![],
+            animation: None,
+            animation_frame: 0,
 
             timer_start: 0.0,
             frames: 0,
@@ -100,14 +105,15 @@ impl Component for App {
                     "KeyS" => self.camera.move_h(Vector2::from_xy(0.0, -0.2)),
                     "KeyA" => self.camera.move_h(Vector2::from_xy(0.2, 0.0)),
                     "KeyD" => self.camera.move_h(Vector2::from_xy(-0.2, 0.0)),
+                    "KeyE" => self.camera.move_h(Vector2::from_xy(-0.2, 0.0)),
                     "ShiftLeft" => self.camera.move_v(-0.2),
                     "Space" => self.camera.move_v(0.2),
-                    "ArrowDown" => self.move_picked(Vector3::from_xyz(-0.2, 0.0, 0.0)),
-                    "ArrowUp" => self.move_picked(Vector3::from_xyz(0.2, 0.0, 0.0)),
+                    // "ArrowDown" => self.move_picked(Vector3::from_xyz(-0.2, 0.0, 0.0)),
+                    // "ArrowUp" => self.move_picked(Vector3::from_xyz(0.2, 0.0, 0.0)),
                     "ArrowLeft" => self.move_picked(Vector3::from_xyz(0.0, 0.0, 0.2)),
                     "ArrowRight" => self.move_picked(Vector3::from_xyz(0.0, 0.0, -0.2)),
-                    "Digit1" => self.move_picked(Vector3::from_xyz(0.0, 0.2, 0.0)),
-                    "Digit2" => self.move_picked(Vector3::from_xyz(0.0, -0.2, 0.0)),
+                    // "Digit1" => self.move_picked(Vector3::from_xyz(0.0, 0.2, 0.0)),
+                    // "Digit2" => self.move_picked(Vector3::from_xyz(0.0, -0.2, 0.0)),
                     _ => (),
                 }
                 false
@@ -220,9 +226,29 @@ impl Component for App {
 
 impl App {
     fn move_picked(&mut self, d: Vector3) {
-        let picked = self.picked_object;
-        let p = &mut self.objects[picked];
-        p.skeleton[1].rotate(d);
+        // let picked = self.picked_object;
+        // let p = &mut self.objects[picked];
+        // p.skeleton[1].rotate(d);
+
+        // if let Light::Directional(light) = &self.lights[0] {
+        //     light.transform.rotate(d)
+        // }
+
+        if let Some(anim) = &self.animation {
+            let delta = if d.z() > 0.0 { 1 } else { -1 };
+
+            self.animation_frame = (self.animation_frame + delta + anim.frames.len() as isize)
+                % anim.frames.len() as isize;
+
+            log::debug!(
+                "App move_picked animation_frame = {}, transform = {:?}",
+                self.animation_frame,
+                anim.frames[self.animation_frame as usize].transforms
+            );
+
+            let picked = &self.picked_object();
+            picked.set_pose(&anim.frames[self.animation_frame as usize])
+        }
     }
 
     fn required_shapes() -> Vec<(String, String)> {
@@ -232,6 +258,7 @@ impl App {
             ("resources/floor.obj", "Floor"),
             ("resources/bell.skl", "Bell.skl"),
             ("resources/bell.skin", "Bell.skin"),
+            ("resources/bell.anim", "Bell.anim"),
             ("resources/bell.obj", "Bell"),
         ]
         .map(|(path, name)| (path.to_string(), name.to_string()))
@@ -300,6 +327,10 @@ impl App {
         })
     }
 
+    fn picked_object(&self) -> &Object {
+        &self.objects[self.picked_object]
+    }
+
     fn on_downloaded(&mut self, ctx: &Context<Self>) {
         let gl = self.gl();
         let skull = Rc::new(Shape::parse(&self.texts["Skull"], &gl));
@@ -308,6 +339,7 @@ impl App {
 
         let skl = Rc::new(Skeleton::from_file(&self.texts["Bell.skl"]));
         let skin = Rc::new(Skinning::parse(&self.texts["Bell.skin"]));
+        let anim = Animation::parse(&self.texts["Bell.anim"]);
 
         log::debug!("App on_download skl: {:?}", skl);
 
@@ -317,11 +349,20 @@ impl App {
             Object::new(
                 bell,
                 self.textures["Grass"].clone(),
-                Transform::from_xyz(10.0, 0.0, 0.0),
+                Transform::from_xyz_hv(10.0, 0.0, 0.0, 0.0, 0.0),
             )
             .with_skeleton(&skl),
         );
         self.picked_object = self.objects.len() - 1;
+        self.picked_object().set_pose(&anim.frames[0]);
+
+        // self.objects.push(
+        //     Object::new(
+        //         cube.clone(),
+        //         self.textures["Grass"].clone(),
+        //         Transform::from_xyz_hv(10.0, 0.0, 0.0, 0.0, std::f32::consts::PI / 2.0),
+        //     ),
+        // );
 
         self.objects
             .push(Object::new(skull, self.textures["Skull"].clone(), {
@@ -403,5 +444,7 @@ impl App {
         self.lights.push(light);
 
         self.request_frame(ctx);
+
+        self.animation = Some(anim);
     }
 }

@@ -1,11 +1,14 @@
 use web_sys::{WebGl2RenderingContext, WebGlBuffer};
 
 use crate::{
-    geometry::{Vector2, Vector3, vector::Vector4},
+    geometry::{vector::Vector4, Vector2, Vector3},
     shaders::make_f32_buffer,
 };
 
-use super::parsers::{shape::{ObjParser, VertexData}, skinning::Skinning};
+use super::parsers::{
+    shape::{ObjParser, VertexData},
+    skinning::Skinning,
+};
 
 pub struct Shape {
     vertices: Vec<VertexData>,
@@ -33,7 +36,7 @@ impl Shape {
     }
 
     fn make_buffer(vertices: &[VertexData], gl: &WebGl2RenderingContext) -> WebGlBuffer {
-        let mut vec_f32 = Vec::with_capacity(vertices.len() * (3 + 3 + 2));
+        let mut vec_f32 = Vec::with_capacity(vertices.len() * (3 + 3 + 2 + 4 + 4));
         for vertex in vertices.iter() {
             Self::push_vector3(&mut vec_f32, vertex.point);
             Self::push_vector3(&mut vec_f32, vertex.normal);

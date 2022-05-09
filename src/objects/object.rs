@@ -2,7 +2,11 @@ use std::rc::Rc;
 
 use crate::geometry::{Matrix, Transform};
 
-use super::{parsers::skeleton::Skeleton, shape::Shape, texture::Texture};
+use super::{
+    parsers::{animation::AnimationFrame, skeleton::Skeleton},
+    shape::Shape,
+    texture::Texture,
+};
 
 pub struct Object {
     pub shape: Rc<Shape>,
@@ -20,6 +24,12 @@ impl Object {
             transform,
             ignored_by_light: false,
             skeleton: vec![],
+        }
+    }
+
+    pub fn set_pose(&self, pose: &AnimationFrame) {
+        for i in 0..pose.transforms.len() {
+            self.skeleton[i].set_transform(pose.transforms[i]);
         }
     }
 

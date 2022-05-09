@@ -23,6 +23,11 @@ impl Transform {
         this.parent = Some(parent);
     }
 
+    pub fn set_transform(&self, transform: RawTransform) {
+        let mut this = self.0.borrow_mut();
+        this.raw = transform;
+    }
+
     pub fn from_xyz_hv(x: f32, y: f32, z: f32, h: f32, v: f32) -> Self {
         let t = Self::new();
         t.translate(x, y, z);
@@ -38,7 +43,7 @@ impl Transform {
     }
 
     pub fn to_raw(&self) -> RawTransform {
-        self.0.borrow().raw.clone()
+        self.0.borrow().raw
     }
 
     pub fn matrix(&self) -> Matrix {
@@ -127,7 +132,7 @@ impl TransformInternal {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct RawTransform {
     position: Vector3,
     scale: f32,
@@ -158,9 +163,9 @@ impl RawTransform {
     }
 
     pub fn direction(&self) -> Vector3 {
-        // Matrix::rotation_z(-self.rotation.z())
         Matrix::rotation_y(self.rotation.y())
             * Matrix::rotation_x(self.rotation.x())
+            * Matrix::rotation_z(self.rotation.z())
             * Vector3::from_xyz(0.0, 0.0, -1.0)
     }
 
@@ -191,6 +196,10 @@ impl RawTransform {
 
     pub fn translate(&mut self, dx: f32, dy: f32, dz: f32) {
         self.position += Vector3::from_xyz(dx, dy, dz);
+    }
+
+    pub fn translate_vec(&mut self, dv: Vector3) {
+        self.position += dv;
     }
 
     pub fn rotate_h(&mut self, dh: f32) {

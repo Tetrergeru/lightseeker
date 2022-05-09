@@ -1,5 +1,6 @@
-use crate::geometry::{Vector2, Vector3, transform::RawTransform};
+use crate::geometry::{transform::RawTransform, Vector2, Vector3};
 
+pub mod animation;
 pub mod shape;
 pub mod skeleton;
 pub mod skinning;
@@ -37,9 +38,15 @@ pub fn parse_transform(data: &[&str]) -> RawTransform {
 
     log::info!("parse_transform data: {:?}", &data[0..3]);
     let angles = parse_point_3(&data[0..3]);
+    let translate = if data.len() > 3 {
+        parse_point_3(&data[3..6])
+    } else {
+        Vector3::from_xyz(0.0, 0.0, 0.0)
+    };
 
     let mut t = RawTransform::new();
     t.rotate(angles);
+    t.translate_vec(translate);
     t
 }
 
