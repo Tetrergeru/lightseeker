@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 
-use crate::geometry::{transform::RawTransform, Transform};
+use crate::geometry::{transform::RawTransform, Matrix, Transform};
 
 use super::{obj_lines, parse_transform};
 
 #[derive(Debug)]
 pub struct Skeleton {
-    bones: Vec<Bone>,
-    names: HashMap<String, usize>,
+    pub bones: Vec<Bone>,
+    pub names: HashMap<String, usize>,
 }
 
 #[derive(Debug)]
@@ -15,6 +15,17 @@ pub struct Bone {
     pub parent: isize,
     pub name: String,
     pub initial_transform: RawTransform,
+}
+
+pub struct BoneTransform {
+    pub initial: Transform,
+    pub posed: Transform,
+}
+
+impl BoneTransform {
+    pub fn matrix(&self) -> Matrix {
+        self.initial.reverse_matrix() * self.posed.matrix()
+    }
 }
 
 impl Skeleton {
@@ -43,19 +54,19 @@ impl Skeleton {
         skl
     }
 
-    pub fn make_nested_transforms(&self) -> Vec<Transform> {
+    pub fn make_nested_transforms(&self, parent: Transform) -> Vec<BoneTransform> {
         let mut transforms = Vec::with_capacity(self.bones.len());
 
         for _bone in self.bones.iter() {
-            transforms.push(Transform::new());
+            transforms.push(BoneTransform {
+                initial: Transform::from_raw(_bone.initial_transform),
+                posed: Transform::from_raw(_bone.initial_transform),
+            });
         }
 
-        for (idx, bone) in self.bones.iter().enumerate() {
-            if bone.parent < 0 {
-                continue;
-            }
-            let parent = transforms[bone.parent as usize].clone();
-            transforms[idx].set_parent(parent);
+        for (idx, _bone) in self.bones.iter().enumerate() {
+            transforms[idx].initial.set_parent(parent.clone());
+            transforms[idx].posed.set_parent(parent.clone());
         }
 
         transforms

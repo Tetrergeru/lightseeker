@@ -21,7 +21,7 @@ impl Skinning {
             match split[0] {
                 "vl" => skin
                     .vertices
-                    .push(Self::parse_skinning_vertsex(&split[2..])),
+                    .push(Self::parse_skinning_vertices(&split[2..])),
                 _ => continue,
             }
         }
@@ -29,7 +29,7 @@ impl Skinning {
         skin
     }
 
-    fn parse_skinning_vertsex(split: &[&str]) -> SkinningVertex {
+    fn parse_skinning_vertices(split: &[&str]) -> SkinningVertex {
         if split.len() % 2 != 0 || split.len() > 8 {
             panic!("Invalid skinning vertex {:?}", split);
         }
@@ -38,10 +38,12 @@ impl Skinning {
         let mut weights = Vector4::from_xyzw(0.0, 0.0, 0.0, 0.0);
 
         for i in 0..(split.len() / 2) {
-            let pair = parse_point_2(&split[2 * i..2 * i + 2]);
+            let pair = parse_point_2(&split[(2 * i)..(2 * i + 2)]);
             bones.set(i, pair.x);
             weights.set(i, pair.y);
         }
+
+        log::info!("Skinning parse_skinning_vertices bones = {:?} weights = {:?}", bones, weights);
 
         SkinningVertex { bones, weights }
     }

@@ -28,7 +28,7 @@ pub fn parse_point_2(split: &[&str]) -> Vector2 {
         coords[i] = split[i].parse().unwrap();
     }
 
-    Vector2::from_xy(coords[0], 1.0 - coords[1])
+    Vector2::from_xy(coords[0], coords[1])
 }
 
 pub fn parse_transform(data: &[&str]) -> RawTransform {
@@ -36,7 +36,6 @@ pub fn parse_transform(data: &[&str]) -> RawTransform {
         panic!("Incorrect transform for a bone");
     }
 
-    log::info!("parse_transform data: {:?}", &data[0..3]);
     let angles = parse_point_3(&data[0..3]);
     let translate = if data.len() > 3 {
         parse_point_3(&data[3..6])

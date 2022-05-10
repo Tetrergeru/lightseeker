@@ -47,15 +47,6 @@ impl ViewShader {
         let vertex_bones_location = gl.get_attrib_location(&program, "vertexBones") as u32;
         let vertex_weights_location = gl.get_attrib_location(&program, "vertexWeights") as u32;
 
-        log::info!(
-            "ViewShader new atrs = {} {} {} {} {}",
-            vertex_position_location,
-            vertex_normal_location,
-            vertex_textcoord_location,
-            vertex_bones_location,
-            vertex_weights_location
-        );
-
         let camera_location = gl.get_uniform_location(&program, "camera").unwrap();
         let camera_pos_location = gl.get_uniform_location(&program, "cameraPosition").unwrap();
         let position_location = gl.get_uniform_location(&program, "position").unwrap();

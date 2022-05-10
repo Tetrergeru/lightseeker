@@ -118,7 +118,7 @@ impl TransformInternal {
     pub fn reverse_matrix(&self) -> Matrix {
         let mut matrix = self.raw.reverse_matrix();
         if let Some(parent) = &self.parent {
-            matrix = parent.reverse_matrix() * matrix;
+            matrix = matrix * parent.reverse_matrix();
         }
         matrix
     }
@@ -171,16 +171,18 @@ impl RawTransform {
 
     pub fn matrix(&self) -> Matrix {
         Matrix::translate(self.position)
+            // 
+            * Matrix::rotation_y(-self.rotation.y())
             * Matrix::rotation_z(self.rotation.z())
             * Matrix::rotation_x(self.rotation.x())
-            * Matrix::rotation_y(self.rotation.y())
+            // //
             * Matrix::scale(self.scale)
     }
 
     pub fn reverse_matrix(&self) -> Matrix {
-        Matrix::rotation_z(-self.rotation.z())
-            * Matrix::rotation_x(-self.rotation.x())
-            * Matrix::rotation_y(-self.rotation.y())
+        Matrix::rotation_x(-self.rotation.x())
+            * Matrix::rotation_z(-self.rotation.z())
+            * Matrix::rotation_y(self.rotation.y())
             * Matrix::translate(self.position * -1.0)
     }
 

@@ -123,6 +123,8 @@ void main() {
         brightness = vec3(1.0, 1.0, 1.0);
     }
 
+    brightness = max(vec3(1.0), brightness);
+
     color = mix(
     vec4(
         texture(textureMap, textCoord).rgb * brightness,

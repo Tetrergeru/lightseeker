@@ -34,7 +34,7 @@ void main() {
     }
     gl_Position = camera * position * pos;
 
-    textCoord = vertexTexture;
     fragNormal = normalMat * vec4(vertexNormal, 1.0);
+    textCoord = vertexTexture;
     fragPosition = position * pos;
 }

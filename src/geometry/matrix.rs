@@ -1,10 +1,23 @@
 use std::ops::{Deref, Mul};
+use std::fmt::Debug;
 
 use super::vector::{Vector3, Vector4};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct Matrix {
     pub matrix: [f32; 16],
+}
+
+impl Debug for Matrix {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut matrix = [[0.0_f32; Self::SIZE]; Self::SIZE];
+        for (i, row) in matrix.iter_mut().enumerate() {
+            for (j, val) in row.iter_mut().enumerate() {
+                *val = self.get(i, j);
+            }
+        }
+        f.debug_struct("Matrix").field("matrix", &matrix).finish()
+    }
 }
 
 impl Matrix {

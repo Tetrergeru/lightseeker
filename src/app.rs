@@ -241,10 +241,19 @@ impl App {
                 % anim.frames.len() as isize;
 
             log::debug!(
-                "App move_picked animation_frame = {}, transform = {:?}",
+                "App move_picked animation_frame = {}",
                 self.animation_frame,
-                anim.frames[self.animation_frame as usize].transforms
+                // anim.frames[self.animation_frame as usize].transforms
             );
+
+            // log::debug!(
+            //     "App move_picked matrices = {:#?}",
+            //     anim.frames[self.animation_frame as usize]
+            //         .transforms
+            //         .iter()
+            //         .map(|it| it.matrix() * it.reverse_matrix())
+            //         .collect::<Vec<_>>(),
+            // );
 
             let picked = &self.picked_object();
             picked.set_pose(&anim.frames[self.animation_frame as usize])
@@ -256,10 +265,10 @@ impl App {
             ("resources/skull.obj", "Skull"),
             ("resources/Crate1.obj", "Cube"),
             ("resources/floor.obj", "Floor"),
-            ("resources/bell.skl", "Bell.skl"),
-            ("resources/bell.skin", "Bell.skin"),
-            ("resources/bell.anim", "Bell.anim"),
-            ("resources/bell.obj", "Bell"),
+            ("resources/walk.skl", "Walk.skl"),
+            ("resources/walk.skin", "Walk.skin"),
+            ("resources/walk.anim", "Walk.anim"),
+            ("resources/walk.obj", "Walk"),
         ]
         .map(|(path, name)| (path.to_string(), name.to_string()))
         .into_iter()
@@ -296,7 +305,10 @@ impl App {
             }
             context.bind_framebuffer(light);
             context.clear();
-            for obj in self.objects.iter_mut() {
+            for (idx, obj) in self.objects.iter_mut().enumerate() {
+                if idx == self.picked_object {
+                    continue;
+                }
                 if obj.ignored_by_light {
                     continue;
                 }
@@ -304,7 +316,10 @@ impl App {
             }
             context.unbind_framebuffer();
         }
-        for obj in self.objects.iter_mut() {
+        for (idx, obj) in self.objects.iter_mut().enumerate() {
+            if idx == self.picked_object {
+                // continue;
+            }
             self.context
                 .as_ref()
                 .unwrap()
@@ -337,32 +352,47 @@ impl App {
         let cube = Rc::new(Shape::parse(&self.texts["Cube"], &gl));
         let floor = Rc::new(Shape::parse(&self.texts["Floor"], &gl));
 
-        let skl = Rc::new(Skeleton::from_file(&self.texts["Bell.skl"]));
-        let skin = Rc::new(Skinning::parse(&self.texts["Bell.skin"]));
-        let anim = Animation::parse(&self.texts["Bell.anim"]);
-
-        log::debug!("App on_download skl: {:?}", skl);
-
-        let bell = Rc::new(Shape::parse_with_skin(&self.texts["Bell"], &skin, &gl));
+        let skl = Rc::new(Skeleton::from_file(&self.texts["Walk.skl"]));
+        let skin = Rc::new(Skinning::parse(&self.texts["Walk.skin"]));
+        let anim = Animation::parse(&self.texts["Walk.anim"]);
+        let bell = Rc::new(Shape::parse_with_skin(&self.texts["Walk"], &skin, &gl));
 
         self.objects.push(
             Object::new(
                 bell,
                 self.textures["Grass"].clone(),
-                Transform::from_xyz_hv(10.0, 0.0, 0.0, 0.0, 0.0),
+                {
+                    let t = Transform::from_xyz_hv(10.0, -2.0, 0.0, 0.0, 0.0);
+                    // t.rotate_h(1.57);
+                    t
+                },
             )
             .with_skeleton(&skl),
         );
         self.picked_object = self.objects.len() - 1;
-        self.picked_object().set_pose(&anim.frames[0]);
+        // self.picked_object().set_pose(&anim.frames[0]);
 
-        // self.objects.push(
-        //     Object::new(
-        //         cube.clone(),
-        //         self.textures["Grass"].clone(),
-        //         Transform::from_xyz_hv(10.0, 0.0, 0.0, 0.0, std::f32::consts::PI / 2.0),
-        //     ),
-        // );
+        for i in 0..self.picked_object().skeleton.len() {
+            self.objects
+                .push(Object::new(cube.clone(), self.textures["Grass"].clone(), {
+                    let t = Transform::from_xyz(0.0, 0.0, 0.0);
+                    t.set_parent(self.picked_object().skeleton[i].posed.clone());
+                    t.scale(0.1);
+                    t
+                }));
+            for j in 0..5 {
+                self.objects.push(Object::new(
+                    cube.clone(),
+                    self.textures["Carpet"].clone(),
+                    {
+                        let t = Transform::from_xyz(0.0, 0.0, -(0.2 + j as f32 * 0.2));
+                        t.set_parent(self.picked_object().skeleton[i].posed.clone());
+                        t.scale(0.1);
+                        t
+                    },
+                ));
+            }
+        }
 
         self.objects
             .push(Object::new(skull, self.textures["Skull"].clone(), {
