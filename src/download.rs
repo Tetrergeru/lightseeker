@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use futures::{
     channel::oneshot,
@@ -7,24 +7,19 @@ use futures::{
 use gloo::net::http::Request;
 use wasm_bindgen::{prelude::Closure, JsCast};
 use wasm_bindgen_futures::JsFuture;
-use web_sys::{HtmlImageElement, Url, WebGl2RenderingContext};
+use web_sys::{HtmlImageElement, Url, WebGl2RenderingContext as Gl};
 
 use crate::objects::texture::Texture;
 
-pub struct DownloadManager {
-    textures: HashMap<String, Rc<Texture>>,
-    texts: HashMap<String, Rc<String>>,
-}
+#[derive(Clone)]
+pub struct ResourceManager(Rc<RefCell<ResourceBatch>>);
 
-impl DownloadManager {
+impl ResourceManager {
     pub fn new() -> Self {
-        Self {
-            textures: HashMap::new(),
-            texts: HashMap::new(),
-        }
+        Self(Rc::new(RefCell::new(ResourceBatch::new())))
     }
 
-    pub async fn download(requests: Vec<ResourceRequest>, gl: WebGl2RenderingContext) -> Self {
+    pub async fn download(requests: Vec<ResourceRequest>, gl: Gl) -> ResourceBatch {
         let mut textures = vec![];
         let mut texts = vec![];
         for req in requests.iter() {
@@ -47,27 +42,42 @@ impl DownloadManager {
 
         let (textures, texts) = join(join_all(textures), join_all(texts)).await;
 
-        Self {
+        ResourceBatch {
             textures: textures.into_iter().collect(),
             texts: texts.into_iter().collect(),
         }
     }
 
-    pub fn merge(&mut self, other: DownloadManager) {
+    pub fn merge(&mut self, other: ResourceBatch) {
+        let mut inner = self.0.borrow_mut();
         for (name, texture) in other.textures {
-            self.textures.insert(name, texture);
+            inner.textures.insert(name, texture);
         }
         for (name, text) in other.texts {
-            self.texts.insert(name, text);
+            inner.texts.insert(name, text);
         }
     }
 
     pub fn get_texture(&self, name: &str) -> Rc<Texture> {
-        self.textures[name].clone()
+        self.0.borrow().textures[name].clone()
     }
 
     pub fn get_text(&self, name: &str) -> Rc<String> {
-        self.texts[name].clone()
+        self.0.borrow().texts[name].clone()
+    }
+}
+
+pub struct ResourceBatch {
+    textures: HashMap<String, Rc<Texture>>,
+    texts: HashMap<String, Rc<String>>,
+}
+
+impl ResourceBatch {
+    fn new() -> Self {
+        Self {
+            textures: HashMap::new(),
+            texts: HashMap::new(),
+        }
     }
 }
 

@@ -3,7 +3,10 @@ use std::rc::Rc;
 use crate::geometry::{Matrix, Transform};
 
 use super::{
-    parsers::{animation::AnimationFrame, skeleton::{Skeleton, BoneTransform}},
+    parsers::{
+        animation::AnimationFrame,
+        skeleton::{BoneTransform, Skeleton},
+    },
     shape::Shape,
     texture::Texture,
 };

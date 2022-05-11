@@ -70,7 +70,8 @@ impl ObjParser {
                 "v" => self.points.push(parse_point_3(&split[1..])),
                 "vt" => {
                     let coord = parse_point_2(&split[1..]);
-                    self.texture_coords.push(Vector2::from_xy(coord.x(), 1.0 - coord.y()));
+                    self.texture_coords
+                        .push(Vector2::from_xy(coord.x(), 1.0 - coord.y()));
                 }
                 "vn" => self.normals.push(parse_point_3(&split[1..])),
                 "f" => self.parse_polygon(&split[1..], skinning),

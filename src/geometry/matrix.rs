@@ -1,5 +1,5 @@
-use std::ops::{Deref, Mul};
 use std::fmt::Debug;
+use std::ops::{Deref, Mul};
 
 use super::vector::{Vector3, Vector4};
 
