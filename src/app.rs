@@ -168,7 +168,7 @@ impl Component for App {
                 self.size.y() as u32,
             ));
 
-            let callback = ctx.link().clone().callback(|res| Msg::ResourcesLoaded(res));
+            let callback = ctx.link().clone().callback(Msg::ResourcesLoaded);
 
             let res = self.world.required_resources();
             let gl = self.gl();

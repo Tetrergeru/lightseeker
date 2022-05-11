@@ -163,9 +163,9 @@ impl RawTransform {
     }
 
     pub fn direction(&self) -> Vector3 {
-        Matrix::rotation_y(self.rotation.y())
-            * Matrix::rotation_x(self.rotation.x())
+        Matrix::rotation_y(-self.rotation.y())
             * Matrix::rotation_z(self.rotation.z())
+            * Matrix::rotation_x(self.rotation.x())
             * Vector3::from_xyz(0.0, 0.0, -1.0)
     }
 
@@ -187,8 +187,8 @@ impl RawTransform {
     }
 
     pub fn normal_matrix(&self) -> Matrix {
-        Matrix::rotation_z(self.rotation.z())
-            * Matrix::rotation_y(self.rotation.y())
+        Matrix::rotation_y(-self.rotation.y())
+            * Matrix::rotation_z(self.rotation.z())
             * Matrix::rotation_x(self.rotation.x())
     }
 

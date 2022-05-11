@@ -67,6 +67,12 @@ impl ResourceManager {
     }
 }
 
+impl Default for ResourceManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct ResourceBatch {
     textures: HashMap<String, Rc<Texture>>,
     texts: HashMap<String, Rc<String>>,
