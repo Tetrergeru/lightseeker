@@ -24,8 +24,7 @@ pub struct BoneTransform {
 
 impl BoneTransform {
     pub fn matrix(&self) -> Matrix {
-        self.posed.matrix() * 
-        self.initial.reverse_matrix()
+        self.posed.matrix() * self.initial.reverse_matrix()
     }
 }
 
@@ -66,8 +65,8 @@ impl Skeleton {
         }
 
         // for (idx, _bone) in self.bones.iter().enumerate() {
-            // transforms[idx].initial.set_parent(parent.clone());
-            // transforms[idx].posed.set_parent(parent.clone());
+        //     transforms[idx].initial.set_parent(parent.clone());
+        //     transforms[idx].posed.set_parent(parent.clone());
         // }
 
         transforms

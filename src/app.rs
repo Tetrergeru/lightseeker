@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc};
+use std::rc::Rc;
 
 use gloo::{events::EventListener, utils::document};
 use gloo_render::{request_animation_frame, AnimationFrame};
@@ -9,7 +9,7 @@ use yew::{html, Component, Context, Html, NodeRef};
 
 use crate::{
     camera::Camera,
-    download::{download_image, download_text},
+    download::{DownloadManager, ResourceRequest},
     geometry::{Transform, Vector2, Vector3},
     gl_context::GlContext,
     light::Light,
@@ -17,7 +17,6 @@ use crate::{
         object::Object,
         parsers::{animation::Animation, skeleton::Skeleton, skinning::Skinning},
         shape::Shape,
-        texture::Texture,
     },
 };
 
@@ -25,11 +24,9 @@ pub struct App {
     canvas_ref: NodeRef,
     context: Option<GlContext>,
 
-    texts: HashMap<String, String>,
-    textures: HashMap<String, Rc<Texture>>,
     objects: Vec<Object>,
     picked_object: usize,
-    currently_downloading: usize,
+    resources: DownloadManager,
 
     camera: Camera,
     lights: Vec<Light>,
@@ -51,8 +48,7 @@ pub enum Msg {
     MouseDown(MouseEvent),
     MouseMove(MouseEvent),
     MouseUp(MouseEvent),
-    TextLoaded(String, String),
-    TextureLoaded(String, Texture),
+    ResourcesLoaded(DownloadManager),
     Timer(f64),
 }
 
@@ -73,11 +69,9 @@ impl Component for App {
         Self {
             canvas_ref: NodeRef::default(),
 
-            texts: HashMap::new(),
-            textures: HashMap::new(),
             objects: vec![],
             picked_object: 0,
-            currently_downloading: 0,
+            resources: DownloadManager::new(),
 
             camera: Camera::new(Vector3::from_xyz(-8.0, 0.0, -8.0), 0.0, 0.0)
                 .with_aspect(size.x() / size.y()),
@@ -118,16 +112,6 @@ impl Component for App {
                 }
                 false
             }
-            Msg::TextLoaded(name, text) => {
-                self.texts.insert(name, text);
-                self.single_download_finished(ctx);
-                false
-            }
-            Msg::TextureLoaded(name, texture) => {
-                self.textures.insert(name, Rc::new(texture));
-                self.single_download_finished(ctx);
-                false
-            }
             Msg::MouseDown(_) => {
                 self.mouse_down = true;
                 false
@@ -165,6 +149,11 @@ impl Component for App {
                 self.request_frame(ctx);
                 false
             }
+            Msg::ResourcesLoaded(res) => {
+                self.resources.merge(res);
+                self.on_downloaded(ctx);
+                false
+            }
         }
     }
 
@@ -193,31 +182,14 @@ impl Component for App {
                 self.size.y() as u32,
             ));
 
-            for (path, name) in Self::required_shapes() {
-                let callback = ctx
-                    .link()
-                    .clone()
-                    .callback(|(str, shape)| Msg::TextLoaded(str, shape));
+            let callback = ctx.link().clone().callback(|res| Msg::ResourcesLoaded(res));
 
-                self.currently_downloading += 1;
-                spawn_local(async move {
-                    let text = download_text(&path).await;
-                    callback.emit((name, text));
-                });
-            }
-            for (path, name) in Self::required_textures() {
-                let callback = ctx
-                    .link()
-                    .clone()
-                    .callback(|(str, shape)| Msg::TextureLoaded(str, shape));
-
-                self.currently_downloading += 1;
-                let gl = self.gl();
-                spawn_local(async move {
-                    let image = download_image(&path).await;
-                    callback.emit((name, Texture::new(image, &gl)));
-                });
-            }
+            let res = self.required_resources();
+            let gl = self.gl();
+            spawn_local(async move {
+                let res = DownloadManager::download(res, gl).await;
+                callback.emit(res);
+            });
         }
 
         self.draw();
@@ -226,64 +198,33 @@ impl Component for App {
 
 impl App {
     fn move_picked(&mut self, d: Vector3) {
-        // let picked = self.picked_object;
-        // let p = &mut self.objects[picked];
-        // p.skeleton[1].rotate(d);
-
-        // if let Light::Directional(light) = &self.lights[0] {
-        //     light.transform.rotate(d)
-        // }
-
         if let Some(anim) = &self.animation {
             let delta = if d.z() > 0.0 { 1 } else { -1 };
 
             self.animation_frame = (self.animation_frame + delta + anim.frames.len() as isize)
                 % anim.frames.len() as isize;
 
-            log::debug!(
-                "App move_picked animation_frame = {}",
-                self.animation_frame,
-                // anim.frames[self.animation_frame as usize].transforms
-            );
-
-            // log::debug!(
-            //     "App move_picked matrices = {:#?}",
-            //     anim.frames[self.animation_frame as usize]
-            //         .transforms
-            //         .iter()
-            //         .map(|it| it.matrix() * it.reverse_matrix())
-            //         .collect::<Vec<_>>(),
-            // );
+            log::debug!("App move_picked animation_frame = {}", self.animation_frame,);
 
             let picked = &self.picked_object();
             picked.set_pose(&anim.frames[self.animation_frame as usize])
         }
     }
 
-    fn required_shapes() -> Vec<(String, String)> {
-        [
-            ("resources/skull.obj", "Skull"),
-            ("resources/Crate1.obj", "Cube"),
-            ("resources/floor.obj", "Floor"),
-            ("resources/walk.skl", "Walk.skl"),
-            ("resources/walk.skin", "Walk.skin"),
-            ("resources/walk.anim", "Walk.anim"),
-            ("resources/walk.obj", "Walk"),
+    fn required_resources(&self) -> Vec<ResourceRequest> {
+        use ResourceRequest as RR;
+        vec![
+            RR::text("resources/skull.obj", "Skull"),
+            RR::text("resources/Crate1.obj", "Cube"),
+            RR::text("resources/floor.obj", "Floor"),
+            RR::text("resources/walk.skl", "Walk.skl"),
+            RR::text("resources/walk.skin", "Walk.skin"),
+            RR::text("resources/walk.anim", "Walk.anim"),
+            RR::text("resources/walk.obj", "Walk"),
+            RR::image("resources/skull.jpg", "Skull"),
+            RR::image("resources/crate_1.jpg", "Grass"),
+            RR::image("resources/carpet.jpg", "Carpet"),
         ]
-        .map(|(path, name)| (path.to_string(), name.to_string()))
-        .into_iter()
-        .collect()
-    }
-
-    fn required_textures() -> Vec<(String, String)> {
-        [
-            ("resources/skull.jpg", "Skull"),
-            ("resources/crate_1.jpg", "Grass"),
-            ("resources/carpet.jpg", "Carpet"),
-        ]
-        .map(|(path, name)| (path.to_string(), name.to_string()))
-        .into_iter()
-        .collect()
     }
 
     fn gl(&self) -> Gl {
@@ -327,14 +268,6 @@ impl App {
         }
     }
 
-    fn single_download_finished(&mut self, ctx: &Context<Self>) {
-        self.currently_downloading -= 1;
-
-        if self.currently_downloading == 0 {
-            self.on_downloaded(ctx);
-        }
-    }
-
     fn request_frame(&mut self, ctx: &Context<Self>) {
         self._frame = Some({
             let link = ctx.link().clone();
@@ -348,19 +281,26 @@ impl App {
 
     fn on_downloaded(&mut self, ctx: &Context<Self>) {
         let gl = self.gl();
-        let skull = Rc::new(Shape::parse(&self.texts["Skull"], &gl));
-        let cube = Rc::new(Shape::parse(&self.texts["Cube"], &gl));
-        let floor = Rc::new(Shape::parse(&self.texts["Floor"], &gl));
+        let skull = Rc::new(Shape::parse(&self.resources.get_text("Skull"), &gl));
+        let cube = Rc::new(Shape::parse(&self.resources.get_text("Cube"), &gl));
+        let floor = Rc::new(Shape::parse(&self.resources.get_text("Floor"), &gl));
 
-        let skl = Rc::new(Skeleton::from_file(&self.texts["Walk.skl"]));
-        let skin = Rc::new(Skinning::parse(&self.texts["Walk.skin"]));
-        let anim = Animation::parse(&self.texts["Walk.anim"]);
-        let bell = Rc::new(Shape::parse_with_skin(&self.texts["Walk"], &skin, &gl));
+        let skl = Rc::new(Skeleton::from_file(&self.resources.get_text("Walk.skl")));
+        let skin = Rc::new(Skinning::parse(&self.resources.get_text("Walk.skin")));
+        let anim = Animation::parse(&self.resources.get_text("Walk.anim"));
+        let bell = Rc::new(Shape::parse_with_skin(
+            &self.resources.get_text("Walk"),
+            &skin,
+            &gl,
+        ));
+        let grass_texture = self.resources.get_texture("Grass");
+        let skull_texture = self.resources.get_texture("Skull");
+        let carpet_texture = self.resources.get_texture("Carpet");
 
         self.objects.push(
-            Object::new(bell, self.textures["Grass"].clone(), {
+            Object::new(bell, grass_texture.clone(), {
                 let t = Transform::from_xyz_hv(10.0, -2.0, 0.0, 0.0, 0.0);
-                t.rotate_h(-1.57);
+                // t.rotate_h(-1.57);
                 t
             })
             .with_skeleton(&skl),
@@ -368,7 +308,7 @@ impl App {
         self.picked_object = self.objects.len() - 1;
 
         self.objects
-            .push(Object::new(skull, self.textures["Skull"].clone(), {
+            .push(Object::new(skull, skull_texture.clone(), {
                 let t = Transform::from_xyz(0.0, -0.3, 0.0);
                 t.rotate_v(1.2 * std::f32::consts::PI / 2.0);
                 t.scale(0.1);
@@ -376,12 +316,12 @@ impl App {
             }));
         self.objects.push(Object::new(
             cube.clone(),
-            self.textures["Grass"].clone(),
+            grass_texture.clone().clone(),
             Transform::from_xyz(5.0, -1.0, 5.0),
         ));
         self.objects.push(Object::new(
             cube.clone(),
-            self.textures["Grass"].clone(),
+            grass_texture.clone(),
             Transform::from_xyz(0.0, -1.0, 0.0),
         ));
 
@@ -392,31 +332,25 @@ impl App {
         };
         self.objects.push(Object::new(
             floor.clone(),
-            self.textures["Carpet"].clone(),
+            carpet_texture.clone(),
             carpet_transform.clone(),
         ));
 
-        self.objects.push(Object::new(
-            floor.clone(),
-            self.textures["Carpet"].clone(),
-            {
+        self.objects
+            .push(Object::new(floor.clone(), carpet_texture.clone(), {
                 let t = Transform::from_xyz(0.0, 0.0, -2.0);
                 t.set_parent(carpet_transform);
                 t
-            },
-        ));
-        self.objects.push(Object::new(
-            floor.clone(),
-            self.textures["Carpet"].clone(),
-            {
+            }));
+        self.objects
+            .push(Object::new(floor.clone(), carpet_texture.clone(), {
                 let t = Transform::from_xyz(0.0, 4.0, 0.0);
                 t.scale(5.0);
                 t.rotate_v(std::f32::consts::PI);
                 t
-            },
-        ));
+            }));
         self.objects
-            .push(Object::new(floor, self.textures["Carpet"].clone(), {
+            .push(Object::new(floor, carpet_texture.clone(), {
                 let t = Transform::from_xyz(0.0, 4.0, -10.0);
                 t.scale(5.0);
                 t.rotate_v(std::f32::consts::PI);
@@ -424,7 +358,7 @@ impl App {
             }));
         self.objects.push(Object::new(
             cube,
-            self.textures["Grass"].clone(),
+            grass_texture.clone(),
             Transform::from_xyz(0.0, -1.0, -5.0),
         ));
 
