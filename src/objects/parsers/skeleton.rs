@@ -24,7 +24,8 @@ pub struct BoneTransform {
 
 impl BoneTransform {
     pub fn matrix(&self) -> Matrix {
-        self.initial.reverse_matrix() * self.posed.matrix()
+        self.posed.matrix() * 
+        self.initial.reverse_matrix()
     }
 }
 
@@ -54,7 +55,7 @@ impl Skeleton {
         skl
     }
 
-    pub fn make_nested_transforms(&self, parent: Transform) -> Vec<BoneTransform> {
+    pub fn make_nested_transforms(&self, _parent: Transform) -> Vec<BoneTransform> {
         let mut transforms = Vec::with_capacity(self.bones.len());
 
         for _bone in self.bones.iter() {
@@ -64,10 +65,10 @@ impl Skeleton {
             });
         }
 
-        for (idx, _bone) in self.bones.iter().enumerate() {
-            transforms[idx].initial.set_parent(parent.clone());
-            transforms[idx].posed.set_parent(parent.clone());
-        }
+        // for (idx, _bone) in self.bones.iter().enumerate() {
+            // transforms[idx].initial.set_parent(parent.clone());
+            // transforms[idx].posed.set_parent(parent.clone());
+        // }
 
         transforms
     }

@@ -358,41 +358,14 @@ impl App {
         let bell = Rc::new(Shape::parse_with_skin(&self.texts["Walk"], &skin, &gl));
 
         self.objects.push(
-            Object::new(
-                bell,
-                self.textures["Grass"].clone(),
-                {
-                    let t = Transform::from_xyz_hv(10.0, -2.0, 0.0, 0.0, 0.0);
-                    // t.rotate_h(1.57);
-                    t
-                },
-            )
+            Object::new(bell, self.textures["Grass"].clone(), {
+                let t = Transform::from_xyz_hv(10.0, -2.0, 0.0, 0.0, 0.0);
+                t.rotate_h(-1.57);
+                t
+            })
             .with_skeleton(&skl),
         );
         self.picked_object = self.objects.len() - 1;
-        // self.picked_object().set_pose(&anim.frames[0]);
-
-        for i in 0..self.picked_object().skeleton.len() {
-            self.objects
-                .push(Object::new(cube.clone(), self.textures["Grass"].clone(), {
-                    let t = Transform::from_xyz(0.0, 0.0, 0.0);
-                    t.set_parent(self.picked_object().skeleton[i].posed.clone());
-                    t.scale(0.1);
-                    t
-                }));
-            for j in 0..5 {
-                self.objects.push(Object::new(
-                    cube.clone(),
-                    self.textures["Carpet"].clone(),
-                    {
-                        let t = Transform::from_xyz(0.0, 0.0, -(0.2 + j as f32 * 0.2));
-                        t.set_parent(self.picked_object().skeleton[i].posed.clone());
-                        t.scale(0.1);
-                        t
-                    },
-                ));
-            }
-        }
 
         self.objects
             .push(Object::new(skull, self.textures["Skull"].clone(), {
