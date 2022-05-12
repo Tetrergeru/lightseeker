@@ -5,8 +5,11 @@ use crate::{
     camera::Camera,
     geometry::Matrix,
     light::{Directional, Light, Point},
-    objects::object::Object,
-    shaders::{render_light::RenderLight, view::ViewShader, wire_light::WireLight},
+    objects::{object::Object, particles::Particles},
+    shaders::{
+        particles::ParticlesShader, render_light::RenderLight, view::ViewShader,
+        wire_light::WireLight,
+    },
 };
 
 pub struct GlContext {
@@ -16,6 +19,7 @@ pub struct GlContext {
     view: ViewShader,
     wire_light: WireLight,
     render_light: RenderLight,
+    particles: ParticlesShader,
 }
 
 impl GlContext {
@@ -29,8 +33,8 @@ impl GlContext {
             .dyn_into::<Gl>()
             .unwrap();
         gl.enable(Gl::DEPTH_TEST);
-        gl.enable(Gl::CULL_FACE);
-        gl.cull_face(Gl::BACK);
+        // gl.enable(Gl::CULL_FACE);
+        // gl.cull_face(Gl::BACK);
         let w = canvas.width() as i32;
         let h = canvas.height() as i32;
         Self {
@@ -38,12 +42,17 @@ impl GlContext {
             view: ViewShader::new(&gl, w, h),
             wire_light: WireLight::new(&gl, w, h),
             render_light: RenderLight::new(&gl, w, h),
+            particles: ParticlesShader::new(&gl, w, h),
             gl,
         }
     }
 
     pub fn view(&self, obj: &Object, camera: &Camera, light: &[Light]) {
         self.view.draw(&self.gl, obj, camera, light);
+    }
+
+    pub fn particles(&self, particles: &Particles, camera: &Camera) {
+        self.particles.draw(&self.gl, particles, camera);
     }
 
     pub fn wire_light(&self, light: Matrix, proj: Matrix) {

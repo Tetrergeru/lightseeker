@@ -9,6 +9,7 @@ use crate::{
     objects::{
         object::Object,
         parsers::{animation::Animation, skeleton::Skeleton, skinning::Skinning},
+        particles::Particles,
         shape::Shape,
     },
 };
@@ -17,6 +18,7 @@ pub struct World {
     rm: ResourceManager,
 
     objects: Vec<Object>,
+    particles: Vec<Particles>,
     picked_object: isize,
     animation: Option<Animation>,
     animation_frame: isize,
@@ -31,6 +33,7 @@ impl World {
             rm,
 
             objects: vec![],
+            particles: vec![],
             picked_object: -1,
             animation: None,
             animation_frame: 0,
@@ -73,6 +76,14 @@ impl World {
         let grass_texture = self.rm.get_texture("Grass");
         let skull_texture = self.rm.get_texture("Skull");
         let carpet_texture = self.rm.get_texture("Carpet");
+
+        // Particles
+
+        let particles = Particles::new(&gl, cube.clone(), carpet_texture.clone());
+        particles.transform.translate(5.0, 0.0, 0.0);
+        self.particles.push(particles);
+
+        // Objects
 
         self.objects.push(
             Object::new(bell, grass_texture.clone(), {
@@ -195,6 +206,9 @@ impl World {
         }
         for obj in self.objects.iter() {
             context.view(obj, &self.camera, &self.lights);
+        }
+        for part in self.particles.iter() {
+            context.particles(part, &self.camera);
         }
     }
 

@@ -9,7 +9,6 @@ in vec4 vertexBones;
 in vec4 vertexWeights;
 
 out vec2 textCoord;
-out vec4 fragInLight;
 out vec4 fragNormal;
 out vec4 fragPosition;
 

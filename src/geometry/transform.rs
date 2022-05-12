@@ -134,9 +134,9 @@ impl TransformInternal {
 
 #[derive(Debug, Clone, Copy)]
 pub struct RawTransform {
-    position: Vector3,
-    scale: f32,
-    rotation: Vector3,
+    pub position: Vector3,
+    pub scale: f32,
+    pub rotation: Vector3,
 }
 
 impl RawTransform {

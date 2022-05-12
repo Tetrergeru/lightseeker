@@ -26,7 +26,7 @@ impl Shape {
 
     fn new(vertices: Vec<VertexData>, gl: &WebGl2RenderingContext) -> Self {
         Self {
-            buffer: Self::make_buffer(&vertices, gl),
+            buffer: make_f32_buffer(gl, &Self::make_buffer(&vertices)),
             vertices,
         }
     }
@@ -35,7 +35,11 @@ impl Shape {
         self.buffer.clone()
     }
 
-    fn make_buffer(vertices: &[VertexData], gl: &WebGl2RenderingContext) -> WebGlBuffer {
+    pub fn to_f32_vec(&self) -> Box<[f32]> {
+        Self::make_buffer(&self.vertices)
+    }
+
+    fn make_buffer(vertices: &[VertexData]) -> Box<[f32]> {
         let mut vec_f32 = Vec::with_capacity(vertices.len() * (3 + 3 + 2 + 4 + 4));
         for vertex in vertices.iter() {
             Self::push_vector3(&mut vec_f32, vertex.point);
@@ -44,7 +48,7 @@ impl Shape {
             Self::push_vector4(&mut vec_f32, vertex.bones);
             Self::push_vector4(&mut vec_f32, vertex.weights);
         }
-        make_f32_buffer(gl, &vec_f32)
+        vec_f32.into_boxed_slice()
     }
 
     fn push_vector3(vec_f32: &mut Vec<f32>, vector: Vector3) {

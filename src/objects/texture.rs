@@ -1,5 +1,9 @@
 use web_sys::{HtmlImageElement, WebGl2RenderingContext as Gl, WebGlTexture};
 
+use crate::shaders::tex_image_2d_with_f32_array;
+
+use super::shape::Shape;
+
 #[derive(Debug)]
 pub struct Texture {
     texture: WebGlTexture,
@@ -63,6 +67,27 @@ impl Texture {
             None,
         )
         .unwrap();
+        gl.tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MAG_FILTER, Gl::NEAREST as i32);
+        gl.tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MIN_FILTER, Gl::NEAREST as i32);
+        gl.tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_S, Gl::CLAMP_TO_EDGE as i32);
+        gl.tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_T, Gl::CLAMP_TO_EDGE as i32);
+
+        Self::from_texture(texture)
+    }
+
+    pub fn from_shape(gl: &Gl, shape: &Shape) -> Self {
+        let texture = gl.create_texture().unwrap();
+
+        let vec = shape.to_f32_vec();
+        log::debug!(
+            "Texture from_shape vec_f32.len = {}, step = {}, buffer_length = {}",
+            vec.len(),
+            shape.step(),
+            shape.buffer_length()
+        );
+
+        gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
+        tex_image_2d_with_f32_array(gl, shape.step(), shape.buffer_length(), vec);
         gl.tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MAG_FILTER, Gl::NEAREST as i32);
         gl.tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MIN_FILTER, Gl::NEAREST as i32);
         gl.tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_S, Gl::CLAMP_TO_EDGE as i32);
