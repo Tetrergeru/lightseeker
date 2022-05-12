@@ -76,7 +76,7 @@ impl World {
 
         self.objects.push(
             Object::new(bell, grass_texture.clone(), {
-                let t = Transform::from_xyz_hv(3.0, -2.0, 0.0, 0.0, 0.0);
+                let t = Transform::from_xyz_hv(0.0, -2.0, 0.0, 0.0, 0.0);
                 t.rotate_h(-1.57);
                 t
             })
@@ -85,7 +85,7 @@ impl World {
         self.picked_object = self.objects.len() as isize - 1;
 
         self.objects.push(Object::new(skull, skull_texture, {
-            let t = Transform::from_xyz(0.0, -0.3, 0.0);
+            let t = Transform::from_xyz(0.0, 0.3, 0.0);
             t.rotate_v(1.2 * std::f32::consts::PI / 2.0);
             t.scale(0.1);
             t
@@ -95,11 +95,11 @@ impl World {
             grass_texture.clone(),
             Transform::from_xyz(5.0, -1.0, 5.0),
         ));
-        self.objects.push(Object::new(
-            cube.clone(),
-            grass_texture.clone(),
-            Transform::from_xyz(0.0, -1.0, 0.0),
-        ));
+        // self.objects.push(Object::new(
+        //     cube.clone(),
+        //     grass_texture.clone(),
+        //     Transform::from_xyz(0.0, -1.0, 0.0),
+        // ));
 
         let carpet_transform = {
             let t = Transform::from_xyz(0.0, -2.0, 0.0);

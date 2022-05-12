@@ -1,13 +1,27 @@
 #version 300 es
 
-in vec3 vertexPosition;
-in vec2 vertexTexture;
+#define MAX_BONES 32
 
-out vec2 textCoord;
+in vec3 vertexPosition;
+in vec4 vertexBones;
+in vec4 vertexWeights;
 
 uniform mat4 projection;
 
+uniform int boneCount;
+uniform mat4[MAX_BONES] bones;
+
 void main() {
-    gl_Position = projection * vec4(vertexPosition, 1.0);
-    textCoord = vertexTexture;
+    vec4 pos;
+    if (boneCount == 0) {
+        pos = vec4(vertexPosition, 1.0);
+    } else {
+        pos = bones[int(vertexBones.x)] * vec4(vertexPosition, 1.0) * vertexWeights.x
+            + bones[int(vertexBones.y)] * vec4(vertexPosition, 1.0) * vertexWeights.y
+            + bones[int(vertexBones.z)] * vec4(vertexPosition, 1.0) * vertexWeights.z
+            + bones[int(vertexBones.w)] * vec4(vertexPosition, 1.0) * vertexWeights.w;
+        pos /= pos.w;
+    }
+
+    gl_Position = projection * pos;
 }

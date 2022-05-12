@@ -6,10 +6,7 @@ use crate::{
     geometry::Matrix,
     light::{Directional, Light, Point},
     objects::object::Object,
-    shaders::{
-        render_light::RenderLight, render_point_light::RenderPointLight, view::ViewShader,
-        wire_light::WireLight,
-    },
+    shaders::{render_light::RenderLight, view::ViewShader, wire_light::WireLight},
 };
 
 pub struct GlContext {
@@ -19,7 +16,6 @@ pub struct GlContext {
     view: ViewShader,
     wire_light: WireLight,
     render_light: RenderLight,
-    render_point_light: RenderPointLight,
 }
 
 impl GlContext {
@@ -42,7 +38,6 @@ impl GlContext {
             view: ViewShader::new(&gl, w, h),
             wire_light: WireLight::new(&gl, w, h),
             render_light: RenderLight::new(&gl, w, h),
-            render_point_light: RenderPointLight::new(&gl, w, h),
             gl,
         }
     }
@@ -81,13 +76,13 @@ impl GlContext {
     }
 
     pub fn render_directional_light(&self, obj: &Object, light: &Directional) {
-        self.render_light.draw(&self.gl, obj, light)
+        self.render_light.draw(&self.gl, obj, light.matrix())
     }
 
     pub fn render_point_light(&self, obj: &Object, light: &Point) {
         for (i, m) in light.matrices().into_iter().enumerate() {
             self.point_light_viewport(light, i);
-            self.render_point_light.draw(&self.gl, obj, m);
+            self.render_light.draw(&self.gl, obj, m);
         }
     }
 

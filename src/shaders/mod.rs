@@ -1,12 +1,10 @@
 use js_sys::Float32Array;
-use wasm_bindgen::prelude::wasm_bindgen;
 use web_sys::{
     HtmlCanvasElement, WebGl2RenderingContext as Gl, WebGlBuffer, WebGlProgram, WebGlShader,
-    WebGlTexture, WebGlUniformLocation,
+    WebGlTexture,
 };
 
 pub mod render_light;
-pub mod render_point_light;
 pub mod view;
 pub mod wire_light;
 
@@ -75,10 +73,4 @@ pub fn load_texture_from_canvas(gl: &Gl, texture: &WebGlTexture, image: &HtmlCan
     gl.tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MIN_FILTER, Gl::LINEAR as i32);
     gl.tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_S, Gl::CLAMP_TO_EDGE as i32);
     gl.tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_T, Gl::CLAMP_TO_EDGE as i32);
-}
-
-#[wasm_bindgen(module = "/src/shaders/helpers.js")]
-extern "C" {
-    #[wasm_bindgen(js_name = "uniformTexture")]
-    pub fn uniform_texture(gl: &Gl, location: &WebGlUniformLocation, texture: &WebGlTexture);
 }
