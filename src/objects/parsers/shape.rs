@@ -50,9 +50,7 @@ impl ObjParser {
     }
 
     pub fn parse_with_skin(file: &str, skin: &Skinning) -> Vec<VertexData> {
-        let vd = Self::new().parse_obj(file, Some(skin));
-        log::debug!("ObjParser parse_with_skin vd = {:?}", vd);
-        vd
+        Self::new().parse_obj(file, Some(skin))
     }
 
     fn new() -> Self {

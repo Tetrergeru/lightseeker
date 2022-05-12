@@ -79,21 +79,24 @@ impl World {
 
         // Particles
 
-        let particles = Particles::new(&gl, cube.clone(), carpet_texture.clone());
+        let particles = Particles::new(&gl, skull.clone(), skull_texture.clone());
         particles.transform.translate(5.0, 0.0, 0.0);
         self.particles.push(particles);
 
         // Objects
 
-        self.objects.push(
-            Object::new(bell, grass_texture.clone(), {
-                let t = Transform::from_xyz_hv(0.0, -2.0, 0.0, 0.0, 0.0);
-                t.rotate_h(-1.57);
-                t
-            })
-            .with_skeleton(&skl),
-        );
-        self.picked_object = self.objects.len() as isize - 1;
+        self.picked_object = self.objects.len() as isize;
+
+        for i in 0..10 {
+            self.objects.push(
+                Object::new(bell.clone(), grass_texture.clone(), {
+                    let t = Transform::from_xyz_hv(i as f32 - 6.0, -2.0, 0.0, 0.0, 0.0);
+                    t.rotate_h(-1.57);
+                    t
+                })
+                .with_skeleton(&skl),
+            );
+        }
 
         self.objects.push(Object::new(skull, skull_texture, {
             let t = Transform::from_xyz(0.0, 0.3, 0.0);
@@ -180,8 +183,13 @@ impl World {
 
             log::debug!("App move_picked animation_frame = {}", self.animation_frame,);
 
-            let picked = &self.picked_object();
-            picked.set_pose(&anim.frames[self.animation_frame as usize])
+            for i in 0..10 {
+                let picked = &self.objects[self.picked_object as usize + i];
+                picked.set_pose(
+                    &anim.frames[(self.animation_frame as usize + i + anim.frames.len())
+                        % anim.frames.len()],
+                )
+            }
         }
     }
 
@@ -210,9 +218,5 @@ impl World {
         for part in self.particles.iter() {
             context.particles(part, &self.camera);
         }
-    }
-
-    fn picked_object(&self) -> &Object {
-        &self.objects[self.picked_object as usize]
     }
 }

@@ -123,10 +123,10 @@ impl Component for App {
 
                 self.frames += 1;
                 if self.frames == 60 {
-                    // log::debug!(
-                    //     "App udate Timer fps: {}",
-                    //     ((self.frames as f64 - 1.0) / (t - self.timer_start)) * 1000.0
-                    // );
+                    log::debug!(
+                        "App udate Timer fps: {}",
+                        ((self.frames as f64 - 1.0) / (t - self.timer_start)) * 1000.0
+                    );
                     self.timer_start = t;
                     self.frames = 1;
                 }

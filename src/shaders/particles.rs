@@ -13,6 +13,7 @@ pub struct ParticlesShader {
     verts_in_particle_location: WebGlUniformLocation,
     verts_location: WebGlUniformLocation,
     texture_location: WebGlUniformLocation,
+    verts_stride_location: WebGlUniformLocation,
 
     transforms_locations: Vec<WebGlUniformLocation>,
 }
@@ -20,7 +21,7 @@ pub struct ParticlesShader {
 const VS_SOURCE: &str = include_str!("src/particles.vert");
 const FS_SOURCE: &str = include_str!("src/particles.frag");
 
-const MAX_PARTICLES: usize = 32;
+const MAX_PARTICLES: usize = 200;
 
 impl ParticlesShader {
     pub fn new(gl: &Gl, width: i32, height: i32) -> Self {
@@ -32,6 +33,7 @@ impl ParticlesShader {
             .unwrap();
         let verts_location = gl.get_uniform_location(&program, "verts").unwrap();
         let texture_location = gl.get_uniform_location(&program, "image").unwrap();
+        let verts_stride_location = gl.get_uniform_location(&program, "vertsStride").unwrap();
 
         let transforms_locations = (0..MAX_PARTICLES)
             .map(|i| {
@@ -49,6 +51,7 @@ impl ParticlesShader {
             verts_in_particle_location,
             texture_location,
             verts_location,
+            verts_stride_location,
 
             transforms_locations,
         }
@@ -72,7 +75,7 @@ impl ParticlesShader {
         );
 
         gl.uniform1i(Some(&self.verts_in_particle_location), particles.vertices());
-        gl.uniform1i(Some(&self.verts_location), particles.particles.len() as i32);
+        gl.uniform1i(Some(&self.verts_stride_location), particles.stride());
 
         gl.active_texture(Gl::TEXTURE0);
         gl.bind_texture(Gl::TEXTURE_2D, Some(particles.texture.location()));

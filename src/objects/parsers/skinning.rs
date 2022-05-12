@@ -43,12 +43,6 @@ impl Skinning {
             weights.set(i, pair.y);
         }
 
-        log::info!(
-            "Skinning parse_skinning_vertices bones = {:?} weights = {:?}",
-            bones,
-            weights
-        );
-
         SkinningVertex { bones, weights }
     }
 }
