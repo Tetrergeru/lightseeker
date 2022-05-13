@@ -10,7 +10,7 @@ use crate::{
     download::{ResourceBatch, ResourceManager},
     geometry::{Vector2, Vector3},
     gl_context::GlContext,
-    world::World,
+    world::World, controls::{Controls, ControlKey},
 };
 
 pub struct App {
@@ -21,17 +21,21 @@ pub struct App {
     world: World,
 
     mouse_down: bool,
+    controls: Controls,
     size: Vector2,
 
     timer_start: f64,
+    last_tick: f64,
     frames: usize,
 
     _keydown_listener: EventListener,
+    _keyup_listener: EventListener,
     _frame: Option<AnimationFrame>,
 }
 
 pub enum Msg {
     KeyDown(KeyboardEvent),
+    KeyUp(KeyboardEvent),
     MouseDown(MouseEvent),
     MouseMove(MouseEvent),
     MouseUp(MouseEvent),
@@ -50,6 +54,11 @@ impl Component for App {
             let e = e.clone().unchecked_into::<KeyboardEvent>();
             onkeydown.emit(e);
         });
+        let onkeyup = ctx.link().callback(Msg::KeyUp);
+        let keyup_listener = EventListener::new(&document(), "keyup", move |e| {
+            let e = e.clone().unchecked_into::<KeyboardEvent>();
+            onkeyup.emit(e);
+        });
 
         let size = Vector2::from_xy(1100.0, 800.0);
 
@@ -65,13 +74,16 @@ impl Component for App {
                     .with_aspect(size.x() / size.y()),
             ),
             mouse_down: false,
+            controls: Controls::new(), 
             size,
 
             timer_start: 0.0,
+            last_tick: 0.0,
             frames: 0,
 
             context: None,
             _keydown_listener: keydown_listener,
+            _keyup_listener: keyup_listener,
             _frame: None,
         }
     }
@@ -79,23 +91,11 @@ impl Component for App {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::KeyDown(e) => {
-                let key = e.code();
-                match key.as_str() {
-                    "KeyW" => self.world.camera.move_h(Vector2::from_xy(0.0, 0.2)),
-                    "KeyS" => self.world.camera.move_h(Vector2::from_xy(0.0, -0.2)),
-                    "KeyA" => self.world.camera.move_h(Vector2::from_xy(0.2, 0.0)),
-                    "KeyD" => self.world.camera.move_h(Vector2::from_xy(-0.2, 0.0)),
-                    "KeyE" => self.world.camera.move_h(Vector2::from_xy(-0.2, 0.0)),
-                    "ShiftLeft" => self.world.camera.move_v(0.2),
-                    "Space" => self.world.camera.move_v(-0.2),
-                    // "ArrowDown" => self.move_picked(Vector3::from_xyz(-0.2, 0.0, 0.0)),
-                    // "ArrowUp" => self.move_picked(Vector3::from_xyz(0.2, 0.0, 0.0)),
-                    "ArrowLeft" => self.world.move_picked(Vector3::from_xyz(0.0, 0.0, 0.2)),
-                    "ArrowRight" => self.world.move_picked(Vector3::from_xyz(0.0, 0.0, -0.2)),
-                    // "Digit1" => self.move_picked(Vector3::from_xyz(0.0, 0.2, 0.0)),
-                    // "Digit2" => self.move_picked(Vector3::from_xyz(0.0, -0.2, 0.0)),
-                    _ => (),
-                }
+                self.controls.down(ControlKey::from_string(&e.code()));
+                false
+            }
+            Msg::KeyUp(e) => {
+                self.controls.up(ControlKey::from_string(&e.code()));
                 false
             }
             Msg::MouseDown(_) => {
@@ -118,6 +118,7 @@ impl Component for App {
             Msg::Timer(t) => {
                 if self.frames == 0 {
                     self.timer_start = t;
+                    self.last_tick = t;
                     self.frames = 1;
                 }
 
@@ -131,6 +132,7 @@ impl Component for App {
                     self.frames = 1;
                 }
 
+                self.world.tick((t - self.last_tick) as f32 / 10000.0, &self.controls);
                 self.draw();
                 self.request_frame(ctx);
                 false

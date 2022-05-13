@@ -1,7 +1,7 @@
 use web_sys::{WebGl2RenderingContext as Gl, WebGlBuffer, WebGlProgram, WebGlUniformLocation};
 
 use super::init_shader_program;
-use crate::{geometry::Matrix, shaders::make_f32_buffer};
+use crate::{geometry::{Matrix, Vector3}, shaders::make_f32_buffer};
 
 pub struct WireLight {
     program: WebGlProgram,
@@ -13,6 +13,7 @@ pub struct WireLight {
 
     projection_location: WebGlUniformLocation,
     light_location: WebGlUniformLocation,
+    color_location: WebGlUniformLocation,
 
     buffer: WebGlBuffer,
 }
@@ -28,6 +29,7 @@ impl WireLight {
 
         let projection_location = gl.get_uniform_location(&program, "projection").unwrap();
         let light_location = gl.get_uniform_location(&program, "light").unwrap();
+        let color_location = gl.get_uniform_location(&program, "color").unwrap();
 
         let cube_lines: Vec<f32> = vec![
             // bottom
@@ -68,6 +70,7 @@ impl WireLight {
 
             projection_location,
             light_location,
+            color_location,
 
             buffer: make_f32_buffer(gl, &cube_lines),
         }
@@ -78,7 +81,7 @@ impl WireLight {
         self.height = h;
     }
 
-    pub fn draw(&self, gl: &Gl, proj: Matrix, light: Matrix) {
+    pub fn draw(&self, gl: &Gl, proj: Matrix, light: Matrix, color: Vector3) {
         gl.use_program(Some(&self.program));
 
         gl.viewport(0, 0, self.width, self.height);
@@ -90,6 +93,7 @@ impl WireLight {
 
         gl.uniform_matrix4fv_with_f32_array(Some(&self.projection_location), true, &proj);
         gl.uniform_matrix4fv_with_f32_array(Some(&self.light_location), true, &light);
+        gl.uniform3fv_with_f32_array(Some(&self.color_location), &color);
 
         gl.enable(Gl::BLEND);
         gl.blend_func(Gl::SRC_ALPHA, Gl::ONE_MINUS_SRC_ALPHA);

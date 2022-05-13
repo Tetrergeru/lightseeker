@@ -29,6 +29,17 @@ impl Vector2 {
     }
 }
 
+impl Mul<f32> for Vector2 {
+    type Output = Self;
+
+    fn mul(self, rhs: f32) -> Self {
+        Self {
+            x: self.x * rhs,
+            y: self.y * rhs,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct Vector3 {
     pub vector: [f32; 3],

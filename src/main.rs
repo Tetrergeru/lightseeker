@@ -1,6 +1,7 @@
 pub mod app;
 pub mod camera;
 pub mod color;
+pub mod controls;
 pub mod download;
 pub mod geometry;
 pub mod gl_context;

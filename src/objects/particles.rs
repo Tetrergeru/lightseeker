@@ -45,7 +45,7 @@ impl Particles {
         use std::f32::consts::PI;
         let mut rand = rand::thread_rng();
         let mut vec = vec![];
-        for _ in 0..2 {
+        for _ in 0..20 {
             let mut t = RawTransform::new();
             t.scale(rand.gen_range(0.01, 0.03));
             t.position = Vector3::from_xyz(

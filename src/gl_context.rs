@@ -3,7 +3,7 @@ use web_sys::{HtmlCanvasElement, WebGl2RenderingContext as Gl, WebGlFramebuffer}
 
 use crate::{
     camera::Camera,
-    geometry::Matrix,
+    geometry::{Matrix, Vector3},
     light::{Directional, Light, Point},
     objects::{object::Object, particles::Particles},
     shaders::{
@@ -55,8 +55,8 @@ impl GlContext {
         self.particles.draw(&self.gl, particles, camera);
     }
 
-    pub fn wire_light(&self, light: Matrix, proj: Matrix) {
-        self.wire_light.draw(&self.gl, proj, light)
+    pub fn wire_light(&self, light: Matrix, proj: Matrix, color: Vector3) {
+        self.wire_light.draw(&self.gl, proj, light, color)
     }
 
     pub fn bind_framebuffer(&self, light: &Light) {

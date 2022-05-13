@@ -46,9 +46,13 @@ impl Matrix {
     }
 
     pub fn scale(factor: f32) -> Self {
+        Self::scale_vec(Vector3::from_xyz(factor, factor, factor))
+    }
+
+    pub fn scale_vec(factors: Vector3) -> Self {
         let mut matrix = Self::ident();
         for i in 0..(Self::SIZE - 1) {
-            matrix.set(i, i, factor);
+            matrix.set(i, i, factors.get(i));
         }
         matrix
     }

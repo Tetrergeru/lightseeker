@@ -60,17 +60,22 @@ impl Transform {
 
     pub fn direction(&self) -> Vector3 {
         let this = self.0.borrow();
-        this.raw.direction()
+        this.normal_matrix() * Vector3::from_xyz(0.0, 0.0, -1.0)
     }
 
     pub fn position(&self) -> Vector3 {
         let this = self.0.borrow();
-        this.raw.position()
+        this.matrix() * Vector3::from_xyz(0.0, 0.0, 0.0)
     }
 
     pub fn translate(&self, dx: f32, dy: f32, dz: f32) {
         let mut this = self.0.borrow_mut();
         this.raw.translate(dx, dy, dz);
+    }
+
+    pub fn translate_vec(&self, dv: Vector3) {
+        let mut this = self.0.borrow_mut();
+        this.raw.translate_vec(dv);
     }
 
     pub fn rotate(&self, rot: Vector3) {
@@ -135,7 +140,7 @@ impl TransformInternal {
 #[derive(Debug, Clone, Copy)]
 pub struct RawTransform {
     pub position: Vector3,
-    pub scale: f32,
+    pub scale: Vector3,
     pub rotation: Vector3,
 }
 
@@ -143,7 +148,7 @@ impl RawTransform {
     pub fn new() -> Self {
         Self {
             position: Vector3::zero(),
-            scale: 1.0,
+            scale: Vector3::from_xyz(1.0, 1.0, 1.0),
             rotation: Vector3::zero(),
         }
     }
@@ -163,10 +168,7 @@ impl RawTransform {
     }
 
     pub fn direction(&self) -> Vector3 {
-        Matrix::rotation_y(-self.rotation.y())
-            * Matrix::rotation_z(self.rotation.z())
-            * Matrix::rotation_x(self.rotation.x())
-            * Vector3::from_xyz(0.0, 0.0, -1.0)
+        self.normal_matrix() * Vector3::from_xyz(0.0, 0.0, -1.0)
     }
 
     pub fn matrix(&self) -> Matrix {
@@ -176,20 +178,29 @@ impl RawTransform {
             * Matrix::rotation_z(self.rotation.z())
             * Matrix::rotation_x(self.rotation.x())
             // //
-            * Matrix::scale(self.scale)
+            * Matrix::scale_vec(self.scale)
     }
 
     pub fn reverse_matrix(&self) -> Matrix {
-        Matrix::rotation_x(-self.rotation.x())
+        let sc = self.scale;
+        Matrix::scale_vec(Vector3::from_xyz(1.0 / sc.x(), 1.0 / sc.y(), 1.0 / sc.z()))
+            * Matrix::rotation_x(-self.rotation.x())
             * Matrix::rotation_z(-self.rotation.z())
             * Matrix::rotation_y(self.rotation.y())
             * Matrix::translate(self.position * -1.0)
     }
 
     pub fn normal_matrix(&self) -> Matrix {
+        let sc = self.scale;
+
         Matrix::rotation_y(-self.rotation.y())
             * Matrix::rotation_z(self.rotation.z())
             * Matrix::rotation_x(self.rotation.x())
+            * Matrix::scale_vec(Vector3::from_xyz(
+                sc.y() * sc.z(),
+                sc.x() * sc.z(),
+                sc.x() * sc.y(),
+            ))
     }
 
     pub fn position(&self) -> Vector3 {
