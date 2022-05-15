@@ -1,6 +1,6 @@
 #version 300 es
 
-#define MAX_BONES 32
+#define MAX_BONES 100
 
 in vec3 vertexPosition;
 in vec4 vertexBones;

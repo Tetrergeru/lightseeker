@@ -132,7 +132,8 @@ impl Component for App {
                     self.frames = 1;
                 }
 
-                self.world.tick((t - self.last_tick) as f32 / 10000.0, &self.controls);
+                self.world.tick((t - self.last_tick) as f32 / 1000.0, &self.controls);
+                self.last_tick = t;
                 self.draw();
                 self.request_frame(ctx);
                 false

@@ -4,7 +4,7 @@ use crate::geometry::{Matrix, Transform};
 
 use super::{
     parsers::{
-        animation::AnimationFrame,
+        animation::{Animation, AnimationFrame},
         skeleton::{BoneTransform, Skeleton},
     },
     shape::Shape,
@@ -16,6 +16,8 @@ pub struct Object {
     pub skeleton: Vec<BoneTransform>,
     pub texture: Rc<Texture>,
     pub transform: Transform,
+    pub animation: Option<Rc<Animation>>,
+    pub animation_frame: f32,
     pub ignored_by_light: bool,
 }
 
@@ -27,6 +29,8 @@ impl Object {
             transform,
             ignored_by_light: false,
             skeleton: vec![],
+            animation: None,
+            animation_frame: 0.0,
         }
     }
 
@@ -36,9 +40,30 @@ impl Object {
         }
     }
 
+    pub fn has_skeleton(&self) -> bool {
+        !self.skeleton.is_empty()
+    }
+
     pub fn with_skeleton(mut self, skeleton: &Skeleton) -> Self {
         self.skeleton = skeleton.make_nested_transforms(self.transform.clone());
         self
+    }
+
+    pub fn with_animation(mut self, animation: Rc<Animation>) -> Self {
+        self.animation = Some(animation);
+        self
+    }
+
+    pub fn tick_animation(&mut self, delta_time: f32) {
+        self.animation_frame += delta_time * 20.0;
+    }
+
+    pub fn bone_matrices(&self) -> impl Iterator<Item = Matrix> + '_ {
+        let animation = &self.animation.as_ref().unwrap().frames;
+        let frame_idx = (self.animation_frame.floor() as usize) % animation.len();
+
+        self.set_pose(&animation[frame_idx]);
+        self.skeleton.iter().map(|it| it.matrix())
     }
 
     pub fn ignored_by_light(mut self) -> Self {

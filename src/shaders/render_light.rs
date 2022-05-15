@@ -22,7 +22,7 @@ pub struct RenderLight {
 const VS_SOURCE: &str = include_str!("src/render_light.vert");
 const FS_SOURCE: &str = include_str!("src/render_light.frag");
 
-const MAX_BONES: usize = 32;
+const MAX_BONES: usize = 100;
 
 impl RenderLight {
     pub fn new(gl: &Gl, width: i32, height: i32) -> Self {
@@ -105,12 +105,15 @@ impl RenderLight {
 
         gl.uniform1i(Some(&self.bones_count_location), obj.skeleton.len() as i32);
         gl.uniform_matrix4fv_with_f32_array(Some(&self.bones_locations[0]), true, &Matrix::ident());
-        for (i, bone) in obj.skeleton.iter().enumerate() {
-            gl.uniform_matrix4fv_with_f32_array(
-                Some(&self.bones_locations[i + 1]),
-                true,
-                &bone.matrix(),
-            );
+
+        if obj.has_skeleton() {
+            for (i, bone) in obj.bone_matrices().enumerate() {
+                gl.uniform_matrix4fv_with_f32_array(
+                    Some(&self.bones_locations[i + 1]),
+                    true,
+                    &bone,
+                );
+            }
         }
 
         gl.draw_arrays(Gl::TRIANGLES, 0, obj.shape.buffer_length());

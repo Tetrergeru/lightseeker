@@ -35,7 +35,7 @@ const FS_SOURCE: &str = include_str!("src/view.frag");
 const VS_SOURCE: &str = include_str!("src/view.vert");
 
 const MAX_LIGHTS: usize = 16;
-const MAX_BONES: usize = 32;
+const MAX_BONES: usize = 100;
 
 impl ViewShader {
     pub fn new(gl: &Gl, width: i32, height: i32) -> Self {
@@ -187,12 +187,15 @@ impl ViewShader {
 
         gl.uniform1i(Some(&self.bones_count_location), obj.skeleton.len() as i32);
         gl.uniform_matrix4fv_with_f32_array(Some(&self.bones_locations[0]), true, &Matrix::ident());
-        for (i, bone) in obj.skeleton.iter().enumerate() {
-            gl.uniform_matrix4fv_with_f32_array(
-                Some(&self.bones_locations[i + 1]),
-                true,
-                &bone.matrix(),
-            );
+
+        if obj.has_skeleton() {
+            for (i, bone) in obj.bone_matrices().enumerate() {
+                gl.uniform_matrix4fv_with_f32_array(
+                    Some(&self.bones_locations[i + 1]),
+                    true,
+                    &bone,
+                );
+            }
         }
 
         gl.active_texture(Gl::TEXTURE0);
