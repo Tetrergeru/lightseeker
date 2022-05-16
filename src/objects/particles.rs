@@ -21,7 +21,11 @@ impl Particles {
     pub fn new(gl: &Gl, shape: Rc<Shape>, texture: Rc<Texture>) -> Self {
         let len = shape.buffer_length();
         let stride = (len as f64).sqrt().ceil() as i32;
-        log::debug!("Particles new shape.buffer_length() = {}, stride = {}", shape.buffer_length(), stride);
+        log::debug!(
+            "Particles new shape.buffer_length() = {}, stride = {}",
+            shape.buffer_length(),
+            stride
+        );
         Self {
             buffer: Texture::from_shape(gl, &shape, stride),
             texture,
@@ -33,7 +37,7 @@ impl Particles {
         }
     }
 
-    pub fn stride(&self) ->i32 {
+    pub fn stride(&self) -> i32 {
         self.stride
     }
 
@@ -45,7 +49,7 @@ impl Particles {
         use std::f32::consts::PI;
         let mut rand = rand::thread_rng();
         let mut vec = vec![];
-        for _ in 0..20 {
+        for _ in 0..2 {
             let mut t = RawTransform::new();
             t.scale(rand.gen_range(0.01, 0.03));
             t.position = Vector3::from_xyz(

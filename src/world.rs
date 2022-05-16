@@ -4,7 +4,7 @@ use crate::{
     camera::Camera,
     controls::{ControlKey, Controls},
     download::{ResourceManager, ResourceRequest},
-    geometry::{Transform, Vector2, Vector3},
+    geometry::{Transform, Vector3},
     gl_context::GlContext,
     light::Light,
     objects::{
@@ -78,14 +78,20 @@ impl World {
         use ControlKey::*;
         for key in controls.keys_down() {
             let player_speed = 3.0 * delta_time;
+            let player = &self.bodies[0].transform;
+
+            let mut fwd = self.camera.transform.direction();
+            fwd.set(1, 0.0);
+            fwd = fwd * (1.0 / fwd.length()) * player_speed;
+
             match key {
-                Forward => self.camera.move_h(Vector2::from_xy(0.0, player_speed)),
-                Back => self.camera.move_h(Vector2::from_xy(0.0, -player_speed)),
-                Right => self.camera.move_h(Vector2::from_xy(-player_speed, 0.0)),
-                Left => self.camera.move_h(Vector2::from_xy(player_speed, 0.0)),
-                Jump => self.camera.move_v(-player_speed),
-                Crouch => self.camera.move_v(player_speed),
-                Extra6 => self.bodies[0].collide(&self.bodies[1]),
+                Forward => player.translate_vec(fwd),
+                Back => player.translate_vec(fwd * -1.0),
+                Right => player.translate(-fwd.z(), 0.0, fwd.x()),
+                Left => player.translate(fwd.z(), 0.0, -fwd.x()),
+                Jump => player.translate(0.0, player_speed, 0.0),
+                Crouch => player.translate(0.0, -player_speed, 0.0),
+                // Extra6 => self.bodies[0].collide(&self.bodies[1]),
                 _ => (),
             }
         }
@@ -134,13 +140,13 @@ impl World {
         for part in self.particles.iter() {
             context.particles(part, &self.camera);
         }
-        for body in self.bodies.iter() {
-            context.wire_light(
-                body.frame_matrix(),
-                self.camera.matrix(),
-                Vector3::from_xyz(0.2, 1.0, 0.2),
-            );
-        }
+        // for body in self.bodies.iter() {
+        //     context.wire_light(
+        //         body.frame_matrix(),
+        //         self.camera.matrix(),
+        //         Vector3::from_xyz(0.2, 1.0, 0.2),
+        //     );
+        // }
     }
 
     pub fn init_0(&mut self, context: &GlContext) {
@@ -176,20 +182,28 @@ impl World {
 
         // Rigid bodies
 
-        let body = RigidBody::new(
-            Vector3::from_xyz(1.0, 2.0, 1.0),
-            Vector3::zero(),
-            Transform::from_xyz(3.0, -0.5, -9.1),
-        )
-        .as_movable();
-        self.bodies.push(body);
+        let player_transform = Transform::from_xyz(8.0, 0.0, 8.0);
         let body = RigidBody::new(
             Vector3::from_xyz(1.0, 1.0, 1.0),
             Vector3::zero(),
-            Transform::from_xyz(3.0, 0.85, -10.0),
+            player_transform.clone(),
         )
         .as_movable();
+        self.camera.transform.set_parent(player_transform);
         self.bodies.push(body);
+
+        // let body = RigidBody::new(
+        //     Vector3::from_xyz(1.0, 2.0, 1.0),
+        //     Vector3::zero(),
+        //     Transform::from_xyz(3.0, -0.5, -9.1),
+        // );
+        // self.bodies.push(body);
+        // let body = RigidBody::new(
+        //     Vector3::from_xyz(1.0, 1.0, 1.0),
+        //     Vector3::zero(),
+        //     Transform::from_xyz(3.0, 0.85, -10.0),
+        // );
+        // self.bodies.push(body);
 
         // Particles
 

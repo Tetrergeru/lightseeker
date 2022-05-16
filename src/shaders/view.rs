@@ -156,7 +156,7 @@ impl ViewShader {
         gl.enable_vertex_attrib_array(self.vertex_weights_location);
 
         gl.uniform_matrix4fv_with_f32_array(Some(&self.camera_location), true, &camera.matrix());
-        gl.uniform3fv_with_f32_array(Some(&self.camera_pos_location), &camera.position);
+        gl.uniform3fv_with_f32_array(Some(&self.camera_pos_location), &camera.position());
 
         gl.uniform_matrix4fv_with_f32_array(
             Some(&self.position_location),

@@ -124,7 +124,7 @@ void main() {
         brightness = vec3(1.0, 1.0, 1.0);
     }
 
-    float dist = clamp((distance(fragPosition.xyz, -cameraPosition) - 5.0) / 15.0, 0.0, 1.0);
+    float dist = clamp((distance(fragPosition.xyz, cameraPosition) - 5.0) / 15.0, 0.0, 1.0);
     color = mix(
         vec4(
             texture(textureMap, textCoord).rgb * brightness,

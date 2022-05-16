@@ -86,6 +86,11 @@ impl Vector3 {
             a.x() * b.y() - a.y() * b.x(),
         )
     }
+
+    pub fn length(self) -> f32 {
+        let v = self;
+        (v.x() * v.x() + v.y() * v.y() + v.z() * v.z()).sqrt()
+    }
 }
 
 impl Deref for Vector3 {

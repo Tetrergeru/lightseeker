@@ -7,10 +7,11 @@ use yew::{html, Component, Context, Html, NodeRef};
 
 use crate::{
     camera::Camera,
+    controls::{ControlKey, Controls},
     download::{ResourceBatch, ResourceManager},
-    geometry::{Vector2, Vector3},
+    geometry::{Transform, Vector2},
     gl_context::GlContext,
-    world::World, controls::{Controls, ControlKey},
+    world::World,
 };
 
 pub struct App {
@@ -70,11 +71,10 @@ impl Component for App {
             resources: rm.clone(),
             world: World::new(
                 rm,
-                Camera::new(Vector3::from_xyz(-8.0, 0.0, -8.0), 0.0, 0.0)
-                    .with_aspect(size.x() / size.y()),
+                Camera::new(Transform::from_xyz(0.0, 0.0, 0.0)).with_aspect(size.x() / size.y()),
             ),
             mouse_down: false,
-            controls: Controls::new(), 
+            controls: Controls::new(),
             size,
 
             timer_start: 0.0,
@@ -106,7 +106,7 @@ impl Component for App {
                 if self.mouse_down {
                     let x = e.movement_x() as f32;
                     let y = e.movement_y() as f32;
-                    self.world.camera.rotate_v(-y / self.size.y() * 10.0);
+                    self.world.camera.rotate_v(y / self.size.y() * 10.0);
                     self.world.camera.rotate_h(x / self.size.x() * 10.0);
                 }
                 false
@@ -132,7 +132,8 @@ impl Component for App {
                     self.frames = 1;
                 }
 
-                self.world.tick((t - self.last_tick) as f32 / 1000.0, &self.controls);
+                self.world
+                    .tick((t - self.last_tick) as f32 / 1000.0, &self.controls);
                 self.last_tick = t;
                 self.draw();
                 self.request_frame(ctx);

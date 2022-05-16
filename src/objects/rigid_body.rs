@@ -1,8 +1,8 @@
-use crate::geometry::{aabb::Aabb, Transform, Vector3, Matrix};
+use crate::geometry::{aabb::Aabb, Matrix, Transform, Vector3};
 
 pub struct RigidBody {
     aabb: Aabb,
-    transform: Transform,
+    pub transform: Transform,
     movable: bool,
 }
 
@@ -46,5 +46,5 @@ impl RigidBody {
 
     pub fn frame_matrix(&self) -> Matrix {
         self.aabb.frame_matrix()
-    } 
+    }
 }
