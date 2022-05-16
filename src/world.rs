@@ -51,6 +51,7 @@ impl World {
         use ResourceRequest as RR;
         vec![
             RR::text("resources/skull.obj", "Skull"),
+            RR::text("resources/gleb.obj", "Gleb"),
             RR::text("resources/Crate1.obj", "Cube"),
             RR::text("resources/floor.obj", "Floor"),
             RR::text("resources/walk.skl", "Walk.skl"),
@@ -70,6 +71,7 @@ impl World {
     pub fn tick(&mut self, delta_time: f32, controls: &Controls) {
         self.tick_controls(delta_time, controls);
         self.tick_animations(delta_time);
+        self.tick_physics(delta_time);
     }
 
     fn tick_controls(&mut self, delta_time: f32, controls: &Controls) {
@@ -92,6 +94,14 @@ impl World {
     fn tick_animations(&mut self, delta_time: f32) {
         for obj in self.objects.iter_mut() {
             obj.tick_animation(delta_time);
+        }
+    }
+
+    fn tick_physics(&mut self, _delta_time: f32) {
+        for i in 0..self.bodies.len() {
+            for j in (i + 1)..self.bodies.len() {
+                self.bodies[i].collide(&self.bodies[j]);
+            }
         }
     }
 
@@ -138,6 +148,7 @@ impl World {
         let skull = Rc::new(Shape::parse(&self.rm.get_text("Skull"), &gl));
         let cube = Rc::new(Shape::parse(&self.rm.get_text("Cube"), &gl));
         let floor = Rc::new(Shape::parse(&self.rm.get_text("Floor"), &gl));
+        let gleb = Rc::new(Shape::parse(&self.rm.get_text("Gleb"), &gl));
 
         let table_skl = Rc::new(Skeleton::from_file(&self.rm.get_text("Walk.skl")));
         let table_skin = Rc::new(Skinning::parse(&self.rm.get_text("Walk.skin")));
@@ -157,8 +168,7 @@ impl World {
             &person_skin,
             &gl,
         ));
-        self.animations
-            .insert("Person".into(), person_anim.clone());
+        self.animations.insert("Person".into(), person_anim.clone());
 
         let grass_texture = self.rm.get_texture("Grass");
         let skull_texture = self.rm.get_texture("Skull");
@@ -203,15 +213,25 @@ impl World {
 
         self.picked_object = self.objects.len() as isize;
 
-        self.objects.push(
-            Object::new(
-                person,
-                grass_texture.clone(),
-                Transform::from_xyz(0.0, -2.0, -10.0),
-            )
-            .with_skeleton(&person_skl)
-            .with_animation(person_anim),
-        );
+        let person_object = Object::new(
+            person,
+            grass_texture.clone(),
+            Transform::from_xyz(0.0, -2.0, -10.0),
+        )
+        .with_skeleton(&person_skl)
+        .with_animation(person_anim);
+
+        let bone_transform = person_object
+            .get_bone_transform(person_skl.names["upfinger3.L"])
+            .clone();
+
+        self.objects.push(person_object);
+
+        self.objects.push(Object::new(gleb, grass_texture.clone(), {
+            let t = Transform::from_xyz(-5.0, -2.0, -5.0);
+            t.scale(0.2);
+            t
+        }));
 
         self.objects.push(Object::new(skull, skull_texture, {
             let t = Transform::from_xyz(0.0, 0.3, 0.0);
@@ -255,16 +275,13 @@ impl World {
                 t
             }));
 
-
-        self.objects.push(Object::new(
-            floor.clone(),
-            carpet_texture.clone(),{
+        self.objects
+            .push(Object::new(floor.clone(), carpet_texture.clone(), {
                 let t = Transform::from_xyz(0.0, 0.0, -15.0);
                 t.scale(5.0);
                 t.rotate_v(-std::f32::consts::PI / 2.0);
                 t
-            }
-        ));
+            }));
 
         self.objects.push(Object::new(floor, carpet_texture, {
             let t = Transform::from_xyz(0.0, 4.0, -10.0);
@@ -297,6 +314,14 @@ impl World {
 
         let light = Light::new_point(&gl, Transform::from_xyz(0.0, 1.0, -3.0))
             .with_color(Vector3::from_xyz(0.8, 0.8, 0.3));
+        self.lights.push(light);
+
+        let light = Light::new_directional(&gl, {
+            let t = Transform::from_xyz(0.0, 0.0, 0.0);
+            t.set_parent(bone_transform);
+            t
+        })
+        .with_color(Vector3::from_xyz(1.0, 0.0, 0.0));
         self.lights.push(light);
     }
 }

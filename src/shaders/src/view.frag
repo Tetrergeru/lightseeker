@@ -3,6 +3,7 @@ precision mediump float;
 
 #define PI 3.14159265
 #define MAX_LIGHTS 16
+#define SHADOW_BIAS 0.001
 
 in vec2 textCoord;
 in vec4 fragNormal;
@@ -61,7 +62,7 @@ float calculateProjectorLight(Light light, vec3 normal) {
     vec3 frag = vec3(0.5, 0.5, 0.5) + (fragInLight.xyz / fragInLight.w) * 0.5;
     bool isInLight = in_range(frag.x) && in_range(frag.y) && in_range(frag.z);
 
-    if (!isInLight || frag.z - texture(light.map, frag.xy).r >= 0.01) {
+    if (!isInLight || frag.z - texture(light.map, frag.xy).r >= SHADOW_BIAS) {
         return 0.0;
     }
 
@@ -94,7 +95,7 @@ float calculatePointLight(Light light, vec3 normal) {
 
         bool isInLight = in_range(frag.x) && in_range(frag.y) && in_range(frag.z);
         if (isInLight) {
-            if (frag.z - texture(light.map, textureByDirection(i, frag.xy)).r < 0.001) {
+            if (frag.z - texture(light.map, textureByDirection(i, frag.xy)).r < SHADOW_BIAS) {
                 return calculatePhong(light.diffuse, light.specular, toLightVec, normal);
             }
             break;
@@ -123,11 +124,14 @@ void main() {
         brightness = vec3(1.0, 1.0, 1.0);
     }
 
+    float dist = clamp((distance(fragPosition.xyz, -cameraPosition) - 5.0) / 15.0, 0.0, 1.0);
     color = mix(
-    vec4(
-        texture(textureMap, textCoord).rgb * brightness,
-        1.0
-    ),
-    vec4(vec4(0.5) + fragNormal * 0.5), 0.0001);
+        vec4(
+            texture(textureMap, textCoord).rgb * brightness,
+            1.0
+        ),
+        vec4(1.0),
+        dist
+    );
 }
 

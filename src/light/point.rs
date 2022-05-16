@@ -19,10 +19,12 @@ pub struct Point {
     pub texture: Rc<Texture>,
 }
 
+const TEXTURE_SIZE: u32 = 2048;
+
 impl Point {
     pub fn new(gl: &Gl, transform: Transform) -> Self {
-        let w = 2 * 2048;
-        let h = 2 * 2048;
+        let w = 2 * TEXTURE_SIZE;
+        let h = 2 * TEXTURE_SIZE;
 
         Self {
             transform,

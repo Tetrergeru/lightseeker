@@ -36,7 +36,7 @@ impl Object {
 
     pub fn set_pose(&self, pose: &AnimationFrame) {
         for i in 0..pose.transforms.len() {
-            self.skeleton[i].posed.set_transform(pose.transforms[i]);
+            self.skeleton[i].set_pose(pose.transforms[i]);
         }
     }
 
@@ -47,6 +47,10 @@ impl Object {
     pub fn with_skeleton(mut self, skeleton: &Skeleton) -> Self {
         self.skeleton = skeleton.make_nested_transforms(self.transform.clone());
         self
+    }
+
+    pub fn get_bone_transform(&self, bone: usize) -> &Transform {
+        &self.skeleton[bone].transform
     }
 
     pub fn with_animation(mut self, animation: Rc<Animation>) -> Self {

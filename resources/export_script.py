@@ -10,19 +10,19 @@ def export_skl(arm, fname):
     with open(fname, "w") as file:
         for bone in arm.pose.bones:
             print(bone.name)
-            
+
             file.write("b %s\n" % bone.name)
             if bone.parent:
                 file.write("bp %s\n" % bone.parent.name)
             file.write("bb ")
-            
+
             m = bone.bone.matrix_local
-            m = arm.convert_space(pose_bone=bone, 
+            m = arm.convert_space(pose_bone=bone,
                 matrix=bone.matrix_basis,
                 from_space='LOCAL',
                 to_space='WORLD',
             )
-            
+
             for a in matrix_decompose(m):
                 file.write("%f " % a)
             file.write("\n\n")
@@ -43,7 +43,6 @@ def export_skin(mesh, arm, fname):
             file.write("\n")
 
 def export_anim(arm, fname):
-    print("export_anim")
     with open(fname, "w") as file:
         i = 0
         while i < 40:
@@ -52,16 +51,16 @@ def export_anim(arm, fname):
             file.write("fr %d\n" % (i + 1))
             for bone in arm.pose.bones:
                 print(bone.name)
-                
+
                 file.write("af ")
                 m = bone.bone.matrix_local #bone.matrix
-                
-                m = arm.convert_space(pose_bone=bone, 
+
+                m = arm.convert_space(pose_bone=bone,
                     matrix=bone.matrix_basis,
                     from_space='LOCAL',
                     to_space='WORLD',
                 )
-                
+
                 for a in matrix_decompose(m):
                     file.write("%f " % a)
                 file.write("\n")

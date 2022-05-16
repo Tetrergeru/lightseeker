@@ -20,18 +20,20 @@ pub struct Directional {
     texture: Rc<Texture>,
 }
 
+const TEXTURE_SIZE: u32 = 2048;
+
 impl Directional {
     pub fn new(gl: &Gl, transform: Transform) -> Self {
-        let w = 2048;
-        let h = 2048;
+        let w = TEXTURE_SIZE;
+        let h = TEXTURE_SIZE;
 
         Self {
             transform,
             texture: Rc::new(Texture::new_depth(gl, w, h)),
             fov: std::f32::consts::PI / 4.0,
             inner_fov: std::f32::consts::PI / 3.0,
-            diffuse: 2.0,
-            specular: 2.0,
+            diffuse: 1.0,
+            specular: 1.0,
             color: Vector3::from_xyz(1.0, 1.0, 1.0),
             w,
             h,
