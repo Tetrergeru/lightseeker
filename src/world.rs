@@ -140,13 +140,13 @@ impl World {
         for part in self.particles.iter() {
             context.particles(part, &self.camera);
         }
-        // for body in self.bodies.iter() {
-        //     context.wire_light(
-        //         body.frame_matrix(),
-        //         self.camera.matrix(),
-        //         Vector3::from_xyz(0.2, 1.0, 0.2),
-        //     );
-        // }
+        for body in self.bodies.iter() {
+            context.wire_light(
+                body.frame_matrix(),
+                self.camera.matrix(),
+                Vector3::from_xyz(0.2, 1.0, 0.2),
+            );
+        }
     }
 
     pub fn init_0(&mut self, context: &GlContext) {
@@ -192,18 +192,21 @@ impl World {
         self.camera.transform.set_parent(player_transform);
         self.bodies.push(body);
 
-        // let body = RigidBody::new(
-        //     Vector3::from_xyz(1.0, 2.0, 1.0),
-        //     Vector3::zero(),
-        //     Transform::from_xyz(3.0, -0.5, -9.1),
-        // );
-        // self.bodies.push(body);
-        // let body = RigidBody::new(
-        //     Vector3::from_xyz(1.0, 1.0, 1.0),
-        //     Vector3::zero(),
-        //     Transform::from_xyz(3.0, 0.85, -10.0),
-        // );
-        // self.bodies.push(body);
+        let body = RigidBody::new(
+            Vector3::from_xyz(10.0, 1.0, 20.0),
+            Vector3::zero(),
+            Transform::from_xyz(0.0, -2.5, -5.0),
+        );
+        self.bodies.push(body);
+
+        let movable_body_transform = Transform::from_xyz(0.0, -1.0, -5.0);
+        let body = RigidBody::new(
+            Vector3::from_xyz(2.0, 2.0, 2.0),
+            Vector3::zero(),
+            movable_body_transform.clone(),
+        )
+        .as_movable();
+        self.bodies.push(body);
 
         // Particles
 
@@ -304,11 +307,11 @@ impl World {
             t
         }));
 
-        self.objects.push(Object::new(
-            cube,
-            grass_texture,
-            Transform::from_xyz(0.0, -1.0, -5.0),
-        ));
+        self.objects.push(Object::new(cube, grass_texture, {
+            let t = Transform::from_xyz(0.0, 0.0, 0.0);
+            t.set_parent(movable_body_transform);
+            t
+        }));
 
         // === Lights ===
 

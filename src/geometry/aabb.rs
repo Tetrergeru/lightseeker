@@ -1,4 +1,4 @@
-use super::{Matrix, Transform, Vector2, Vector3, transform::RawTransform};
+use super::{transform::RawTransform, Matrix, Transform, Vector2, Vector3};
 
 #[derive(Clone)]
 pub struct Aabb {
@@ -25,20 +25,6 @@ impl Aabb {
         let self_center = self.center.position();
         let other_center = other.center.position();
 
-        if let Some(slope_height) = slope_height {
-            let slf_bot = self_center.y() - self.half_size.y();
-            let oth_top = other_center.y() + other.half_size.y();
-            if slf_bot < oth_top && slf_bot + slope_height > oth_top {
-                return Some(Vector3::from_xyz(0.0, oth_top - slf_bot, 0.0));
-            }
-
-            let slf_top = self_center.y() + self.half_size.y();
-            let oth_bot = other_center.y() - other.half_size.y();
-            if oth_bot < slf_top && oth_bot + slope_height > slf_top {
-                return Some(Vector3::from_xyz(0.0, oth_bot - slf_top, 0.0));
-            }
-        }
-
         let mut min = f32::MAX;
         let mut vector = None;
 
@@ -64,6 +50,24 @@ impl Aabb {
                 }
             } else {
                 return None;
+            }
+        }
+
+        if vector.is_none() {
+            return None;
+        }
+
+        if let Some(slope_height) = slope_height {
+            let slf_bot = self_center.y() - self.half_size.y();
+            let oth_top = other_center.y() + other.half_size.y();
+            if slf_bot < oth_top && slf_bot + slope_height > oth_top {
+                return Some(Vector3::from_xyz(0.0, oth_top - slf_bot, 0.0));
+            }
+
+            let slf_top = self_center.y() + self.half_size.y();
+            let oth_bot = other_center.y() - other.half_size.y();
+            if oth_bot < slf_top && oth_bot + slope_height > slf_top {
+                return Some(Vector3::from_xyz(0.0, oth_bot - slf_top, 0.0));
             }
         }
 
