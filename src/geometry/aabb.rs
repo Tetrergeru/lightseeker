@@ -41,7 +41,7 @@ impl Aabb {
 
             let mtv = Self::one_dimensional_mtv(slf, oth);
             if let Some(mtv) = mtv {
-                if mtv < min {
+                if mtv.abs() < min {
                     let mut vec = Vector3::from_xyz(0.0, 0.0, 0.0);
                     vec.set(i, mtv);
                     vector = Some(vec);
@@ -53,9 +53,7 @@ impl Aabb {
             }
         }
 
-        if vector.is_none() {
-            return None;
-        }
+        vector?;
 
         if let Some(slope_height) = slope_height {
             let slf_bot = self_center.y() - self.half_size.y();

@@ -104,10 +104,16 @@ impl World {
     }
 
     fn tick_physics(&mut self, _delta_time: f32) {
-        for i in 0..self.bodies.len() {
+        let player = &self.bodies[0].transform;
+        player.translate(0.0, -_delta_time * 2.0, 0.0);
+
+        for i in 1..self.bodies.len() {
             for j in (i + 1)..self.bodies.len() {
                 self.bodies[i].collide(&self.bodies[j]);
             }
+        }
+        for j in 1..self.bodies.len() {
+            self.bodies[0].collide(&self.bodies[j]);
         }
     }
 
@@ -184,8 +190,8 @@ impl World {
 
         let player_transform = Transform::from_xyz(8.0, 0.0, 8.0);
         let body = RigidBody::new(
-            Vector3::from_xyz(1.0, 1.0, 1.0),
-            Vector3::zero(),
+            Vector3::from_xyz(1.0, 3.0, 1.0),
+            Vector3::from_xyz(0.0, -1.0, 0.0),
             player_transform.clone(),
         )
         .as_movable();
