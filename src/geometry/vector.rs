@@ -1,4 +1,4 @@
-use std::ops::{AddAssign, Deref, Mul, MulAssign, Sub};
+use std::ops::{Add, AddAssign, Deref, Mul, MulAssign, Neg, Sub};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Vector2 {
@@ -91,6 +91,10 @@ impl Vector3 {
         let v = self;
         (v.x() * v.x() + v.y() * v.y() + v.z() * v.z()).sqrt()
     }
+
+    pub fn normalized(self) -> Self {
+        self * (1.0 / self.length())
+    }
 }
 
 impl Deref for Vector3 {
@@ -98,6 +102,14 @@ impl Deref for Vector3 {
 
     fn deref(&self) -> &Self::Target {
         &self.vector
+    }
+}
+
+impl Neg for Vector3 {
+    type Output = Vector3;
+
+    fn neg(self) -> Self::Output {
+        Vector3::from_xyz(-self.x(), -self.y(), -self.z())
     }
 }
 
@@ -114,6 +126,26 @@ impl Mul<f32> for Vector3 {
 
     fn mul(mut self, rhs: f32) -> Self {
         self *= rhs;
+        self
+    }
+}
+
+impl Mul<Vector3> for Vector3 {
+    type Output = Self;
+
+    fn mul(mut self, rhs: Vector3) -> Self::Output {
+        for i in 0..3 {
+            self.set(i, self.get(i) * rhs.get(i));
+        }
+        self
+    }
+}
+
+impl Add<Vector3> for Vector3 {
+    type Output = Self;
+
+    fn add(mut self, rhs: Vector3) -> Self {
+        self += rhs;
         self
     }
 }

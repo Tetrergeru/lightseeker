@@ -1,5 +1,6 @@
 pub mod aabb;
 pub mod matrix;
+pub mod raycast;
 pub mod transform;
 pub mod vector;
 

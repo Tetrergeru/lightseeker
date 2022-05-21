@@ -4,7 +4,7 @@ use crate::{
     camera::Camera,
     controls::{ControlKey, Controls},
     download::{ResourceManager, ResourceRequest},
-    geometry::{Transform, Vector3},
+    geometry::{raycast::Ray, Transform, Vector3},
     gl_context::GlContext,
     light::Light,
     objects::{
@@ -72,6 +72,7 @@ impl World {
         self.tick_controls(delta_time, controls);
         self.tick_animations(delta_time);
         self.tick_physics(delta_time);
+        self.tick_view(delta_time);
     }
 
     fn tick_controls(&mut self, delta_time: f32, controls: &Controls) {
@@ -104,8 +105,8 @@ impl World {
     }
 
     fn tick_physics(&mut self, _delta_time: f32) {
-        let player = &self.bodies[0].transform;
-        player.translate(0.0, -_delta_time * 2.0, 0.0);
+        // let player = &self.bodies[0].transform;
+        // player.translate(0.0, -_delta_time * 2.0, 0.0);
 
         for i in 1..self.bodies.len() {
             for j in (i + 1)..self.bodies.len() {
@@ -114,6 +115,17 @@ impl World {
         }
         for j in 1..self.bodies.len() {
             self.bodies[0].collide(&self.bodies[j]);
+        }
+    }
+
+    fn tick_view(&self, _delta_time: f32) {
+        let ray = Ray::new(self.camera.position(), self.camera.direction().normalized());
+        for (i, body) in self.bodies.iter().enumerate().skip(1) {
+            if let Some((dist, _)) = body.cast_ray(&ray) {
+                if dist < 1.5 {
+                    log::debug!("World tick_view intersected with {}th bosy", i);
+                }
+            }
         }
     }
 

@@ -1,4 +1,6 @@
-use super::{transform::RawTransform, Matrix, Transform, Vector2, Vector3};
+use crate::geometry::raycast::{cast_ray, Plane};
+
+use super::{raycast::Ray, transform::RawTransform, Matrix, Transform, Vector2, Vector3};
 
 #[derive(Clone)]
 pub struct Aabb {
@@ -19,6 +21,65 @@ impl Aabb {
         tr.scale = self.half_size;
         tr.position = self.center.position();
         tr.reverse_matrix()
+    }
+
+    pub fn cast_ray(&self, ray: &Ray) -> Option<(f32, Vector3)> {
+        let center = self.center.position();
+        let size = self.half_size * 2.0;
+
+        let max_point = center + self.half_size;
+        let min_point = center - self.half_size;
+
+        let planes = [
+            Plane::new(
+                max_point,
+                size * Vector3::from_xyz(-1.0, 0.0, 0.0),
+                size * Vector3::from_xyz(0.0, -1.0, 0.0),
+            ),
+            Plane::new(
+                max_point,
+                size * Vector3::from_xyz(-1.0, 0.0, 0.0),
+                size * Vector3::from_xyz(0.0, 0.0, -1.0),
+            ),
+            Plane::new(
+                max_point,
+                size * Vector3::from_xyz(0.0, -1.0, 0.0),
+                size * Vector3::from_xyz(0.0, 0.0, -1.0),
+            ),
+            Plane::new(
+                min_point,
+                size * Vector3::from_xyz(1.0, 0.0, 0.0),
+                size * Vector3::from_xyz(0.0, 1.0, 0.0),
+            ),
+            Plane::new(
+                min_point,
+                size * Vector3::from_xyz(1.0, 0.0, 0.0),
+                size * Vector3::from_xyz(0.0, 0.0, 1.0),
+            ),
+            Plane::new(
+                min_point,
+                size * Vector3::from_xyz(0.0, 1.0, 0.0),
+                size * Vector3::from_xyz(0.0, 0.0, 1.0),
+            ),
+        ];
+
+        let mut min = f32::INFINITY;
+        let mut int_point = Vector3::from_xyz(0.0, 0.0, 0.0);
+        for plane in planes {
+            let int = cast_ray(ray, &plane);
+            if let Some((dist, point)) = int {
+                if dist < min {
+                    min = dist;
+                    int_point = point;
+                }
+            }
+        }
+
+        if min.is_infinite() {
+            None
+        } else {
+            Some((min, int_point))
+        }
     }
 
     pub fn find_mtv(&self, other: &Self, slope_height: Option<f32>) -> Option<Vector3> {

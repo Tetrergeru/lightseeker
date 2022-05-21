@@ -28,7 +28,9 @@ features = [
   'WebGlTexture',
   'CanvasRenderingContext2d',
   'EventListener',
-  'WebGlProgram', 
+  'WebGlProgram',
   'WebGlShader',
   'WebGlBuffer',
+  'Screen',
+  'Window',
 ]

@@ -1,4 +1,7 @@
-use gloo::{events::EventListener, utils::document};
+use gloo::{
+    events::EventListener,
+    utils::{document, window},
+};
 use gloo_render::{request_animation_frame, AnimationFrame};
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::spawn_local;
@@ -61,7 +64,9 @@ impl Component for App {
             onkeyup.emit(e);
         });
 
-        let size = Vector2::from_xy(1100.0, 800.0);
+        let width = window().inner_width().unwrap().as_f64().unwrap() - 7.0;
+        let height = window().inner_height().unwrap().as_f64().unwrap() - 7.0;
+        let size = Vector2::from_xy(width as f32, height as f32);
 
         let rm = ResourceManager::new();
 
@@ -151,7 +156,7 @@ impl Component for App {
         html! {
             <canvas
                 style={format!(
-                    "width: {}px; height: {}px; border: solid black;",
+                    "margin: 0; width: {}px; height: {}px;",
                     self.size.x() as usize,
                     self.size.y() as usize,
                 )}
