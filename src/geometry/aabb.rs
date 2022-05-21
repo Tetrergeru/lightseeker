@@ -4,8 +4,8 @@ use super::{raycast::Ray, transform::RawTransform, Matrix, Transform, Vector2, V
 
 #[derive(Clone)]
 pub struct Aabb {
-    center: Transform,
-    half_size: Vector3,
+    pub center: Transform,
+    pub half_size: Vector3,
 }
 
 impl Aabb {

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc};
+use std::rc::Rc;
 
 use crate::{
     camera::Camera,
@@ -11,6 +11,7 @@ use crate::{
         object::Object,
         parsers::{animation::Animation, skeleton::Skeleton, skinning::Skinning},
         particles::Particles,
+        prefab::{ObjectPrefab, Prefab},
         rigid_body::RigidBody,
         shape::Shape,
     },
@@ -24,7 +25,6 @@ pub struct World {
     bodies: Vec<RigidBody>,
 
     picked_object: isize,
-    animations: HashMap<String, Rc<Animation>>,
 
     lights: Vec<Light>,
     pub camera: Camera,
@@ -40,7 +40,6 @@ impl World {
             bodies: vec![],
 
             picked_object: -1,
-            animations: HashMap::new(),
 
             lights: vec![],
             camera,
@@ -123,7 +122,7 @@ impl World {
         for (i, body) in self.bodies.iter().enumerate().skip(1) {
             if let Some((dist, _)) = body.cast_ray(&ray) {
                 if dist < 1.5 {
-                    log::debug!("World tick_view intersected with {}th bosy", i);
+                    log::debug!("World tick_view intersected with {}th body", i);
                 }
             }
         }
@@ -167,6 +166,14 @@ impl World {
         }
     }
 
+    pub fn add_object(&mut self, object: Object) {
+        self.objects.push(object);
+    }
+
+    pub fn add_body(&mut self, body: RigidBody) {
+        self.bodies.push(body);
+    }
+
     pub fn init_0(&mut self, context: &GlContext) {
         let gl = context.gl();
         let skull = Rc::new(Shape::parse(&self.rm.get_text("Skull"), &gl));
@@ -176,27 +183,38 @@ impl World {
 
         let table_skl = Rc::new(Skeleton::from_file(&self.rm.get_text("Walk.skl")));
         let table_skin = Rc::new(Skinning::parse(&self.rm.get_text("Walk.skin")));
-        let table_anim = Rc::new(Animation::parse(&self.rm.get_text("Walk.anim")));
+        let table_anim = Rc::new(Animation::parse(&self.rm.get_text("Walk.anim"), &table_skl));
         let table = Rc::new(Shape::parse_with_skin(
             &self.rm.get_text("Walk"),
             &table_skin,
             &gl,
         ));
-        self.animations.insert("Table".into(), table_anim.clone());
 
         let person_skl = Rc::new(Skeleton::from_file(&self.rm.get_text("Person.skl")));
         let person_skin = Rc::new(Skinning::parse(&self.rm.get_text("Person.skin")));
-        let person_anim = Rc::new(Animation::parse(&self.rm.get_text("Person.anim")));
+        let person_anim = Rc::new(Animation::parse(
+            &self.rm.get_text("Person.anim"),
+            &person_skl,
+        ));
         let person = Rc::new(Shape::parse_with_skin(
             &self.rm.get_text("Person"),
             &person_skin,
             &gl,
         ));
-        self.animations.insert("Person".into(), person_anim.clone());
 
         let grass_texture = self.rm.get_texture("Grass");
         let skull_texture = self.rm.get_texture("Skull");
         let carpet_texture = self.rm.get_texture("Carpet");
+
+        // Prefabs
+
+        let cube = ObjectPrefab::new(&cube, &grass_texture).with_body(
+            Vector3::from_xyz(2.0, 2.0, 2.0),
+            Vector3::zero(),
+            true,
+        );
+
+        let table = ObjectPrefab::new(&table, &grass_texture).with_animation(&table_anim);
 
         // Rigid bodies
 
@@ -217,15 +235,6 @@ impl World {
         );
         self.bodies.push(body);
 
-        let movable_body_transform = Transform::from_xyz(0.0, -1.0, -5.0);
-        let body = RigidBody::new(
-            Vector3::from_xyz(2.0, 2.0, 2.0),
-            Vector3::zero(),
-            movable_body_transform.clone(),
-        )
-        .as_movable();
-        self.bodies.push(body);
-
         // Particles
 
         let particles = Particles::new(&gl, skull.clone(), skull_texture.clone());
@@ -235,14 +244,13 @@ impl World {
         // Objects
 
         for i in 0..10 {
-            self.objects.push(
-                Object::new(table.clone(), grass_texture.clone(), {
+            table.construct(
+                {
                     let t = Transform::from_xyz_hv(i as f32 - 6.0, -2.0, 0.0, 0.0, 0.0);
                     t.rotate_h(-1.57);
                     t
-                })
-                .with_skeleton(&table_skl)
-                .with_animation(table_anim.clone()),
+                },
+                self,
             );
         }
 
@@ -274,16 +282,8 @@ impl World {
             t.scale(0.1);
             t
         }));
-        self.objects.push(Object::new(
-            cube.clone(),
-            grass_texture.clone(),
-            Transform::from_xyz(5.0, -1.0, 5.0),
-        ));
-        // self.objects.push(Object::new(
-        //     cube.clone(),
-        //     grass_texture.clone(),
-        //     Transform::from_xyz(0.0, -1.0, 0.0),
-        // ));
+
+        cube.construct(Transform::from_xyz(5.0, -1.0, 5.0), self);
 
         let carpet_transform = {
             let t = Transform::from_xyz(0.0, -2.0, 0.0);
@@ -325,11 +325,7 @@ impl World {
             t
         }));
 
-        self.objects.push(Object::new(cube, grass_texture, {
-            let t = Transform::from_xyz(0.0, 0.0, 0.0);
-            t.set_parent(movable_body_transform);
-            t
-        }));
+        cube.construct(Transform::from_xyz(0.0, -1.0, -5.0), self);
 
         // === Lights ===
 

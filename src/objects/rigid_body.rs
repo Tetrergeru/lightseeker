@@ -1,6 +1,9 @@
 use crate::geometry::{aabb::Aabb, raycast::Ray, Matrix, Transform, Vector3};
 
+#[derive(Clone)]
 pub struct RigidBody {
+    pub size: Vector3,
+    pub offset: Vector3,
     aabb: Aabb,
     pub transform: Transform,
     movable: bool,
@@ -11,6 +14,8 @@ pub const SLOPE_HEIGHT: f32 = 0.2;
 impl RigidBody {
     pub fn new(size: Vector3, offset: Vector3, transform: Transform) -> Self {
         Self {
+            size,
+            offset,
             aabb: Aabb::new(
                 {
                     let t = Transform::new();
@@ -23,6 +28,11 @@ impl RigidBody {
             transform,
             movable: false,
         }
+    }
+
+    pub fn replace_transform(&mut self, transform: Transform) {
+        self.transform = transform.clone();
+        self.aabb.center.set_parent(transform.clone());
     }
 
     pub fn as_movable(mut self) -> Self {

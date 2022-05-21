@@ -1,9 +1,12 @@
+use std::rc::Rc;
+
 use crate::geometry::transform::RawTransform;
 
-use super::{obj_lines, parse_transform};
+use super::{obj_lines, parse_transform, skeleton::Skeleton};
 
 pub struct Animation {
     pub frames: Vec<AnimationFrame>,
+    pub skeleton: Rc<Skeleton>,
 }
 
 pub struct AnimationFrame {
@@ -17,7 +20,7 @@ impl AnimationFrame {
 }
 
 impl Animation {
-    pub fn parse(file: &str) -> Self {
+    pub fn parse(file: &str, skl: &Rc<Skeleton>) -> Self {
         let mut frames = vec![];
         let mut current_frame = AnimationFrame::new();
         let mut skip = true;
@@ -36,6 +39,9 @@ impl Animation {
             }
         }
         frames.push(current_frame);
-        Self { frames }
+        Self {
+            frames,
+            skeleton: skl.clone(),
+        }
     }
 }
