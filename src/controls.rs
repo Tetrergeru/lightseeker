@@ -49,7 +49,7 @@ impl Controls {
         }
     }
 
-    pub fn keys_down(&self) -> impl Iterator<Item=ControlKey> + '_ {
+    pub fn keys_down(&self) -> impl Iterator<Item = ControlKey> + '_ {
         self.keys_down.iter().cloned()
     }
 

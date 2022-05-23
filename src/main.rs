@@ -3,6 +3,7 @@ pub mod camera;
 pub mod color;
 pub mod controls;
 pub mod download;
+pub mod entity_manager;
 pub mod geometry;
 pub mod gl_context;
 pub mod light;

@@ -46,7 +46,7 @@ impl Prefab for ObjectPrefab {
     fn construct(&self, transform: Transform, world: &mut World) {
         let mut object = Object::new(self.shape.clone(), self.texture.clone(), transform.clone());
         if let Some((size, offset, movable)) = self.rigid_body.as_ref() {
-            let mut body_clone = RigidBody::new(*size, *offset, transform.clone());
+            let mut body_clone = RigidBody::new(*size, *offset, transform);
             if *movable {
                 body_clone = body_clone.as_movable();
             }

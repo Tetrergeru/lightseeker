@@ -1,7 +1,10 @@
 use web_sys::{WebGl2RenderingContext as Gl, WebGlBuffer, WebGlProgram, WebGlUniformLocation};
 
 use super::init_shader_program;
-use crate::{geometry::{Matrix, Vector3}, shaders::make_f32_buffer};
+use crate::{
+    geometry::{Matrix, Vector3},
+    shaders::make_f32_buffer,
+};
 
 pub struct WireLight {
     program: WebGlProgram,

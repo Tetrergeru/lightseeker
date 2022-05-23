@@ -32,7 +32,7 @@ impl RigidBody {
 
     pub fn replace_transform(&mut self, transform: Transform) {
         self.transform = transform.clone();
-        self.aabb.center.set_parent(transform.clone());
+        self.aabb.center.set_parent(transform);
     }
 
     pub fn as_movable(mut self) -> Self {

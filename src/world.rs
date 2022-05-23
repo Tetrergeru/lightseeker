@@ -4,6 +4,7 @@ use crate::{
     camera::Camera,
     controls::{ControlKey, Controls},
     download::{ResourceManager, ResourceRequest},
+    entity_manager::entity_factory::EntityFactory,
     geometry::{raycast::Ray, Transform, Vector3},
     gl_context::GlContext,
     light::Light,
@@ -20,6 +21,7 @@ use crate::{
 pub struct World {
     rm: ResourceManager,
 
+    entities: EntityFactory,
     objects: Vec<Object>,
     particles: Vec<Particles>,
     bodies: Vec<RigidBody>,
@@ -35,6 +37,7 @@ impl World {
         Self {
             rm,
 
+            entities: EntityFactory::new(),
             objects: vec![],
             particles: vec![],
             bodies: vec![],
@@ -72,6 +75,7 @@ impl World {
         self.tick_animations(delta_time);
         self.tick_physics(delta_time);
         self.tick_view(delta_time);
+        self.tick_scripts(delta_time);
     }
 
     fn tick_controls(&mut self, delta_time: f32, controls: &Controls) {
@@ -125,6 +129,12 @@ impl World {
                     log::debug!("World tick_view intersected with {}th body", i);
                 }
             }
+        }
+    }
+
+    fn tick_scripts(&self, delta_time: f32) {
+        for (_, script) in self.entities.iter_scripts().iter() {
+            script.update(&self.entities, delta_time)
         }
     }
 
@@ -270,7 +280,7 @@ impl World {
 
         self.objects.push(person_object);
 
-        self.objects.push(Object::new(gleb, grass_texture.clone(), {
+        self.objects.push(Object::new(gleb, grass_texture, {
             let t = Transform::from_xyz(-5.0, -2.0, -5.0);
             t.scale(0.2);
             t
