@@ -46,8 +46,8 @@ float calculatePhong(float lightDiffuse, float lightSpecular, vec3 toLightVec, v
     float newDiffuse = lightDiffuse * diff;
 
     vec3 reflection = dot(toLightVec, normal) * normal * 2.0 - toLightVec;
-    vec3 toCameraVec = -normalize(cameraPosition - fragPosition.xyz);
-    float spec = pow(max(dot(reflection, toCameraVec), 0.0), 32.0);
+    vec3 toCameraVec = normalize(cameraPosition - fragPosition.xyz);
+    float spec = pow(max(dot(reflection, toCameraVec), 0.0), 100.0);
     float newSpecular = lightSpecular * spec;
 
     return newDiffuse + newSpecular;
