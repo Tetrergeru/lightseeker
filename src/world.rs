@@ -30,6 +30,8 @@ pub struct World {
 
     lights: Vec<Light>,
     pub camera: Camera,
+
+    draw_gizmos: bool,
 }
 
 impl World {
@@ -46,6 +48,7 @@ impl World {
 
             lights: vec![],
             camera,
+            draw_gizmos: false,
         }
     }
 
@@ -140,15 +143,21 @@ impl World {
 
     pub fn draw(&self, context: &GlContext) {
         for light in self.lights.iter() {
-            if let Light::Directional(d) = light {
-                context.wire_light(
-                    d.matrix(),
-                    self.camera.matrix(),
-                    Vector3::from_xyz(0.0, 0.0, 1.0),
-                );
-            } else if let Light::Point(p) = light {
-                for m in p.matrices_with_nf(0.3, 0.31) {
-                    context.wire_light(m, self.camera.matrix(), Vector3::from_xyz(0.0, 0.0, 0.0));
+            if self.draw_gizmos {
+                if let Light::Directional(d) = light {
+                    context.wire_light(
+                        d.matrix(),
+                        self.camera.matrix(),
+                        Vector3::from_xyz(0.0, 0.0, 1.0),
+                    );
+                } else if let Light::Point(p) = light {
+                    for m in p.matrices_with_nf(0.3, 0.31) {
+                        context.wire_light(
+                            m,
+                            self.camera.matrix(),
+                            Vector3::from_xyz(0.0, 0.0, 0.0),
+                        );
+                    }
                 }
             }
             context.bind_framebuffer(light);
@@ -167,12 +176,14 @@ impl World {
         for part in self.particles.iter() {
             context.particles(part, &self.camera);
         }
-        for body in self.bodies.iter() {
-            context.wire_light(
-                body.frame_matrix(),
-                self.camera.matrix(),
-                Vector3::from_xyz(0.2, 1.0, 0.2),
-            );
+        if self.draw_gizmos {
+            for body in self.bodies.iter() {
+                context.wire_light(
+                    body.frame_matrix(),
+                    self.camera.matrix(),
+                    Vector3::from_xyz(0.2, 1.0, 0.2),
+                );
+            }
         }
     }
 
@@ -248,7 +259,7 @@ impl World {
         // Particles
 
         let particles = Particles::new(&gl, skull.clone(), skull_texture.clone());
-        particles.transform.translate(5.0, 0.0, 0.0);
+        particles.transform.translate(15.0, 0.0, 0.0);
         self.particles.push(particles);
 
         // Objects
